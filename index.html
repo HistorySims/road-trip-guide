@@ -12,7 +12,7 @@
 <style>
 /* Layout: phone-on-the-dash first. Map, then a TripTik-style strip of what's ahead, then the story "marker" plate, controls, settings and the log. Two columns on desktop. */
 :root{
-  --paper:#e8ebe3; --sheet:#f7f8f3; --ink:#1a2321; --muted:#5b6762; --line:#cdd3c8; --mapbg:#dfe3da;
+  --paper:#e8ebe3; --sheet:#f7f8f3; --ink:#1a2321; --muted:#5b6762; --line:#cdd3c8; --mapbg:#dfe3da; --land:#b7cf9f;
   --route:#c3342a; --sign:#1b6946; --sign-ink:#f3f7f2; --on-cat:#fbfaf5;
   --history:#7b4920; --science:#1f6787; --music:#71419a; --oddity:#946d05;
   --good:#2c8a4e; --warn:#b4771b; --bad:#b8392f;
@@ -22,12 +22,12 @@
   --r:10px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e;
+  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e; --land:#1f3426;
   --route:#ff6a5b; --sign:#2f9b6b; --sign-ink:#0c1311; --on-cat:#0f1513;
   --history:#d58b54; --science:#5cb1d3; --music:#b98ae0; --oddity:#e2b33f;
   --good:#4dc47b; --warn:#e3a64a; --bad:#ff6a5b; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e;
+  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e; --land:#1f3426;
   --route:#ff6a5b; --sign:#2f9b6b; --sign-ink:#0c1311; --on-cat:#0f1513;
   --history:#d58b54; --science:#5cb1d3; --music:#b98ae0; --oddity:#e2b33f;
   --good:#4dc47b; --warn:#e3a64a; --bad:#ff6a5b; color-scheme:dark}
@@ -93,8 +93,13 @@ h1 span{color:var(--route)}
 @media(min-width:920px){.layout{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}}
 .col{display:grid;gap:14px;min-width:0}
 
-.mapbox{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--mapbg)}
-#map{height:min(48vh,460px);min-height:260px;background:var(--mapbg)}
+.mapbox{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--land)}
+#map{height:min(48vh,460px);min-height:260px;background:var(--land)}
+.maptools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.maphelp{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px 14px;display:grid;gap:10px}
+.maphelp h3{margin:0;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase}
+.maphelp p{margin:0;font-family:var(--body);font-size:.9rem;line-height:1.45}
+.maphelp a{color:inherit}
 @media(min-width:920px){#map{height:540px}}
 .recenter{position:absolute;z-index:1000;left:50%;transform:translateX(-50%);bottom:14px;background:var(--sheet)!important}
 .mapnote{position:absolute;z-index:1000;left:56px;right:10px;top:10px;padding:6px 10px;border-radius:7px;background:color-mix(in srgb,var(--sheet) 92%,transparent);border:1px solid var(--line);font-size:.78rem;color:var(--muted)}
@@ -255,6 +260,28 @@ code{font-family:var(--mono);font-size:.76rem;background:var(--paper);border:1px
         <button id="recenter" class="recenter" hidden>Follow the car</button>
         <div id="mapNote" class="mapnote" hidden></div>
       </div>
+      <div class="maptools">
+        <button id="mapHelpBtn" class="ghost" aria-expanded="false" aria-controls="mapHelp">How to get real maps</button>
+        <span class="msg" id="mapSrc"></span>
+      </div>
+      <section class="maphelp" id="mapHelp" hidden aria-label="Map options">
+        <p>The map is plain green right now. The route, the car and the story pins all work without a street map underneath. For real streets, pick one of these.</p>
+        <h3>Google Maps · needs your own key</h3>
+        <ol class="steps">
+          <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>, sign in, and create a project.</li>
+          <li>Turn on billing for the project. Google asks for a card, but the Map Tiles API has a monthly free allowance that one person's drives won't come close to.</li>
+          <li>Under <b>APIs &amp; Services → Library</b>, find <b>Map Tiles API</b> and click Enable.</li>
+          <li>Under <b>APIs &amp; Services → Credentials</b>, create an API key.</li>
+          <li>Restrict the key: under Application restrictions pick <b>Websites</b> and add this site's address (<span id="siteAddr"></span>). Under API restrictions allow only <b>Map Tiles API</b>. Anyone can read a key that's used in a web page, so the restrictions are what stop others from using it.</li>
+          <li>Paste the key below and tap <b>Use Google Maps</b>. It's saved only in this browser.</li>
+        </ol>
+        <div class="fields"><label for="gKey">API key</label><input id="gKey" autocomplete="off" spellcheck="false" placeholder="AIza…"></div>
+        <div class="row"><button class="primary" id="useGoogle">Use Google Maps</button></div>
+        <h3>OpenStreetMap · free, no key</h3>
+        <p>OpenStreetMap's own map works without signing up. It's meant for light personal use, which a road trip is.</p>
+        <div class="row"><button id="useOsm">Use OpenStreetMap</button><button class="ghost" id="useNone">Back to plain green</button></div>
+        <p class="msg" id="mapMsg" aria-live="polite"></p>
+      </section>
       <section class="strip" aria-label="Stories ahead">
         <div class="strip-h"><span>Ahead · next 20 miles</span><span id="aheadN"></span></div>
         <svg id="strip" viewBox="0 0 400 108" role="img" aria-label="Upcoming stories along the road"></svg>
@@ -335,7 +362,7 @@ code{font-family:var(--mono);font-size:.76rem;background:var(--paper);border:1px
     </div>
   </div>
 
-  <footer class="foot">Set it up before you pull out; it's built to run hands-free. Hand-written stories cover the Port Chester to Phoenixville demo route. Wikipedia text is CC BY-SA. Routes from OSRM and place search from Nominatim, both built on OpenStreetMap. Map tiles © CARTO and OpenStreetMap contributors.</footer>
+  <footer class="foot">Set it up before you pull out; it's built to run hands-free. Hand-written stories cover the Port Chester to Phoenixville demo route. Wikipedia text is CC BY-SA. Routes from OSRM and place search from Nominatim, both built on OpenStreetMap. Optional map tiles from OpenStreetMap or Google Maps.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -469,7 +496,7 @@ const DEMO_PTS=DEMOS[0].pts;
 
 /* ================= state ================= */
 const FREQ={light:{gap:25,thresh:.5,sight:.75},medium:{gap:10,thresh:.25,sight:.45},heavy:{gap:3,thresh:.08,sight:0}};
-const DEF={freq:'medium',spd:'2',spoken:true,voice:'',rate:1,src:{curated:true,wiki:true,artists:true},clientId:'',from:'',to:'',demo:'pc-phx'};
+const DEF={freq:'medium',spd:'2',spoken:true,voice:'',rate:1,src:{curated:true,wiki:true,artists:true},clientId:'',from:'',to:'',demo:'pc-phx',tiles:'none',gkey:'',gsess:null};
 let prefs=Object.assign({},DEF,LS.get('rr2-prefs',{}));prefs.src=Object.assign({},DEF.src,prefs.src||{});
 const savePrefs=()=>LS.set('rr2-prefs',prefs);
 let hist=LS.get('rr2-hist',null);if(!hist||typeof hist.heard!=='object'||!hist.heard)hist={drives:0,heard:{}};
@@ -885,10 +912,31 @@ function setRoute(R,fit){
 /* ================= map ================= */
 let map=null,tiles=null,routeCase,routeLine,doneLine,carMk,zone,follow=true,lastPan=0,lastDone=0,tileWarned=false;
 const isDark=()=>{const t=document.documentElement.getAttribute('data-theme');if(t)return t==='dark';return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches};
-function setTiles(){if(!map)return;const url=`https://{s}.basemaps.cartocdn.com/${isDark()?'dark_all':'light_all'}/{z}/{x}/{y}{r}.png`;
- if(tiles){tiles.setUrl(url);return}
- tiles=L.tileLayer(url,{subdomains:'abcd',maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
- tiles.on('tileerror',()=>{if(tileWarned)return;tileWarned=true;const n=$('mapNote');n.hidden=false;n.textContent=framed?'Map tiles are blocked in this preview. The route and story pins still work.':"Map tiles didn't load. The route and pins still work."})}
+const TILE_NAMES={none:'Plain green map',osm:'OpenStreetMap',google:'Google Maps'};
+let tileKind='',gAttr='',gAttrT=0;
+async function googleSession(key){
+ const c=prefs.gsess;if(c&&c.key===key&&c.exp>Date.now()/1000+3600)return c.session;
+ const r=await fetch('https://tile.googleapis.com/v1/createSession?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mapType:'roadmap',language:'en-US',region:'US'})});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok||!j.session)throw new Error((j.error&&j.error.message)||('Google said HTTP '+r.status));
+ prefs.gsess={key,session:j.session,exp:+j.expiry||0};savePrefs();return j.session}
+function googleAttr(){if(tileKind!=='google'||!map||!prefs.gsess)return;clearTimeout(gAttrT);gAttrT=setTimeout(async()=>{
+ const b=map.getBounds(),q=new URLSearchParams({session:prefs.gsess.session,key:prefs.gkey,zoom:map.getZoom(),north:b.getNorth(),south:b.getSouth(),east:b.getEast(),west:b.getWest()});
+ try{const j=await getJSON('https://tile.googleapis.com/tile/v1/viewport?'+q);const t=`<b>Google</b> · ${esc(j.copyright||'Map data © Google')}`;if(tiles&&t!==gAttr){map.attributionControl.removeAttribution(gAttr);gAttr=t;map.attributionControl.addAttribution(t)}}catch(e){}},400)}
+async function setTiles(){if(!map)return;const want=prefs.tiles||'none';
+ if(want===tileKind)return;
+ if(tiles){map.removeLayer(tiles);tiles=null}if(gAttr){map.attributionControl.removeAttribution(gAttr);gAttr=''}
+ tileKind=want;tileWarned=false;$('mapNote').hidden=true;
+ const opt={maxZoom:19};
+ if(want==='osm'){tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',Object.assign(opt,{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}))}
+ else if(want==='google'){let sess;
+  try{sess=await googleSession(prefs.gkey)}catch(e){mapMsg(`Google Maps didn't start: ${e.message}`);prefs.tiles='none';savePrefs();tileKind='none';renderMapSrc();return}
+  if(tileKind!=='google')return;
+  tiles=L.tileLayer(`https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(sess)}&key=${encodeURIComponent(prefs.gkey)}`,Object.assign(opt,{maxZoom:22}));googleAttr()}
+ if(tiles){tiles.addTo(map);tiles.on('tileerror',()=>{if(tileWarned)return;tileWarned=true;const n=$('mapNote');n.hidden=false;n.textContent=framed?'Map tiles are blocked in this preview. The route and story pins still work.':"Map tiles didn't load. The route and pins still work."})}
+ renderMapSrc()}
+const mapMsg=t=>{$('mapMsg').textContent=t};
+function renderMapSrc(){$('mapSrc').textContent='Map: '+(TILE_NAMES[prefs.tiles]||TILE_NAMES.none)}
 function initMap(){
  if(!window.L){const n=$('mapNote');n.hidden=false;n.textContent="The map library didn't load. Stories still work.";return}
  map=L.map('map',{zoomControl:true,attributionControl:true}).setView(DEMO_PTS[0],10);setTiles();
@@ -897,9 +945,8 @@ function initMap(){
  doneLine=L.polyline([],{className:'rt-done',interactive:false}).addTo(map);
  zone=L.circle(DEMO_PTS[0],{radius:1000,className:'zone',interactive:false});
  carMk=L.marker(DEMO_PTS[0],{icon:L.divIcon({className:'car',html:'<div class="car-a"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 19 20l-7-3.6L5 20z"/></svg></div>',iconSize:[30,30],iconAnchor:[15,15]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
+ map.on('moveend',googleAttr);
  map.on('dragstart',()=>{if(E.phase==='running'||E.phase==='paused'){follow=false;$('recenter').hidden=false}});
- if(window.matchMedia){const mq=matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',setTiles)}
- new MutationObserver(setTiles).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 }
 function addStory(s){if(pool.has(s.id))return;pool.set(s.id,s);addPin(s)}
 function addPin(s){
@@ -1050,6 +1097,13 @@ function wire(){
  $('demoSel').innerHTML=DEMOS.map(d=>`<option value="${d.id}">${esc(d.from)} → ${esc(d.to)}</option>`).join('');$('demoSel').value=curDemo().id;
  $('demoSel').onchange=e=>{prefs.demo=e.target.value;loadDemo()};
  $('demo').onclick=loadDemo;
+ $('mapHelpBtn').onclick=()=>{const h=$('mapHelp'),open=h.hidden;h.hidden=!open;$('mapHelpBtn').setAttribute('aria-expanded',String(open))};
+ $('siteAddr').textContent=location.origin+'/*';$('gKey').value=prefs.gkey||'';
+ $('useGoogle').onclick=async()=>{const k=$('gKey').value.trim();if(!k){mapMsg('Paste your API key first.');return}
+  if(k!==prefs.gkey)prefs.gsess=null;prefs.gkey=k;prefs.tiles='google';savePrefs();mapMsg('Connecting to Google…');await setTiles();if(prefs.tiles==='google')mapMsg('Google Maps is on.')};
+ $('useOsm').onclick=()=>{prefs.tiles='osm';savePrefs();setTiles();mapMsg('OpenStreetMap is on.')};
+ $('useNone').onclick=()=>{prefs.tiles='none';savePrefs();setTiles();mapMsg('Back to the plain green map.')};
+ renderMapSrc();
  $('voiceSel').onchange=e=>{Voice.v=Voice.list.find(v=>v.name===e.target.value)||Voice.v;prefs.voice=Voice.v?Voice.v.name:'';savePrefs()};
  $('rate').value=String(prefs.rate);$('rate').onchange=e=>{prefs.rate=+e.target.value;savePrefs()};
  $('testVoice').onclick=()=>{if(E.story&&E.story.speaking)return;Voice.speak('The Tappan Zee is about three miles across, the widest point of the Hudson.',null,()=>spMsg(''))};

@@ -20,6 +20,10 @@ It has to be served over https for GPS, the wake lock and Spotify sign-in to wor
 
 **Simulate** runs a drive at your desk. With no destination it uses the demo route picked next to the **Demo route** button: Port Chester to Phoenixville (I-287 and US-202) or White Plains to Cairo, NY (I-287, the Thruway and NY-32).
 
+## Maps (optional)
+
+The map starts plain green: the route, car and story pins work without a street map. Tap **How to get real maps** under the map to switch to OpenStreetMap (free, no key) or Google Maps (your own Google Cloud API key with the Map Tiles API turned on, restricted to your site's address). The choice and key are saved only in that browser.
+
 ## Spotify (optional)
 
 Needs Spotify Premium on the account that owns the developer app.
