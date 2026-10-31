@@ -291,7 +291,7 @@ code{font-family:var(--mono);font-size:.76rem;background:var(--paper);border:1px
             <label for="from">From</label><input id="from" autocomplete="off" placeholder="My location">
             <label for="to">To</label><input id="to" autocomplete="off" placeholder="Blank means free roam">
           </div>
-          <div class="row"><button id="plan">Plan route</button><button id="demo" class="ghost">Demo route</button></div>
+          <div class="row"><button id="plan">Plan route</button><button id="demo" class="ghost">Demo route</button><select id="demoSel" aria-label="Demo route" style="width:auto;flex:1 1 10rem"></select></div>
           <p class="msg" id="planMsg">Demo route loaded: Port Chester to Phoenixville on I-287 and US-202.</p>
         </div>
         <div class="sec">
@@ -457,13 +457,19 @@ const CURATED=[
   text:"The Phoenix Iron Works made this a company town. In 1862 it patented the Phoenix column: hollow wrought-iron segments riveted into a tube that was light and strong. It went into bridges and elevated railways across the country."}
 ];
 
-const DEMO_PTS=[[41.0020,-73.6660],[41.0340,-73.7630],[41.0550,-73.8200],[41.0712,-73.8703],[41.0758,-73.9143],[41.0950,-74.0100],[41.1150,-74.1500],[41.0880,-74.1800],[41.0300,-74.2400],[40.9900,-74.3000],[40.8600,-74.4200],[40.7970,-74.4810],[40.6800,-74.6450],[40.5740,-74.6100],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],[40.2450,-75.2350],[40.1050,-75.3400],[40.0890,-75.3960],[40.1080,-75.4370],[40.1300,-75.5150]];
-const DEMO_VIA=[DEMO_PTS[0],[40.7970,-74.4810],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],DEMO_PTS[DEMO_PTS.length-1]];
-const DEMO_NAME='Port Chester → Phoenixville (demo)';
+const DEMOS=[
+ {id:'pc-phx',from:'Port Chester',to:'Phoenixville',roads:'I-287 and US-202',pts:[[41.0020,-73.6660],[41.0340,-73.7630],[41.0550,-73.8200],[41.0712,-73.8703],[41.0758,-73.9143],[41.0950,-74.0100],[41.1150,-74.1500],[41.0880,-74.1800],[41.0300,-74.2400],[40.9900,-74.3000],[40.8600,-74.4200],[40.7970,-74.4810],[40.6800,-74.6450],[40.5740,-74.6100],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],[40.2450,-75.2350],[40.1050,-75.3400],[40.0890,-75.3960],[40.1080,-75.4370],[40.1300,-75.5150]],
+  via:[[41.0020,-73.6660],[40.7970,-74.4810],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],[40.1300,-75.5150]]},
+ {id:'wp-cairo',from:'White Plains',to:'Cairo',roads:'I-287, the Thruway and NY-32',
+  pts:[[41.0341,-73.7630],[41.0326,-73.7764],[41.0578,-73.8143],[41.0720,-73.9154],[41.0933,-73.9313],[41.1002,-73.9533],[41.1041,-74.0204],[41.0970,-74.0477],[41.1214,-74.1347],[41.1183,-74.1581],[41.1507,-74.1888],[41.2250,-74.1837],[41.3186,-74.1141],[41.3440,-74.1170],[41.3811,-74.1026],[41.4188,-74.0690],[41.4545,-74.0644],[41.4831,-74.0792],[41.5187,-74.0736],[41.5870,-74.0887],[41.6454,-74.0766],[41.7002,-74.0794],[41.7855,-74.0499],[41.8828,-74.0580],[41.9009,-74.0421],[41.9303,-74.0429],[41.9575,-74.0159],[42.1060,-73.9684],[42.1227,-73.9939],[42.1440,-74.0030],[42.1800,-73.9857],[42.2215,-73.9880],[42.2676,-73.9747],[42.2990,-74.0013]],
+  via:[[41.0341,-73.7630],[41.1183,-74.1581],[41.9575,-74.0159],[42.2990,-74.0013]]}
+];
+DEMOS.forEach(d=>{d.name=`${d.from} → ${d.to} (demo)`;d.msg=`${d.from} to ${d.to} on ${d.roads}`});
+const DEMO_PTS=DEMOS[0].pts;
 
 /* ================= state ================= */
 const FREQ={light:{gap:25,thresh:.5,sight:.75},medium:{gap:10,thresh:.25,sight:.45},heavy:{gap:3,thresh:.08,sight:0}};
-const DEF={freq:'medium',spd:'2',spoken:true,voice:'',rate:1,src:{curated:true,wiki:true,artists:true},clientId:'',from:'',to:''};
+const DEF={freq:'medium',spd:'2',spoken:true,voice:'',rate:1,src:{curated:true,wiki:true,artists:true},clientId:'',from:'',to:'',demo:'pc-phx'};
 let prefs=Object.assign({},DEF,LS.get('rr2-prefs',{}));prefs.src=Object.assign({},DEF.src,prefs.src||{});
 const savePrefs=()=>LS.set('rr2-prefs',prefs);
 let hist=LS.get('rr2-hist',null);if(!hist||typeof hist.heard!=='object'||!hist.heard)hist={drives:0,heard:{}};
@@ -482,7 +488,8 @@ function makeRoute(pts,name,meta){const cum=[0];for(let i=1;i<pts.length;i++)cum
 function pointAt(R,d){const n=R.pts.length;if(d<=0)return{p:R.pts[0],i:0,h:brg(R.pts[0],R.pts[1])};if(d>=R.total)return{p:R.pts[n-1],i:n-2,h:brg(R.pts[n-2],R.pts[n-1])};let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(R.cum[m]<=d)lo=m;else hi=m}const a=R.pts[lo],b=R.pts[hi],L=R.cum[hi]-R.cum[lo],t=L?(d-R.cum[lo])/L:0;return{p:[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],i:lo,h:brg(a,b)}}
 function project(R,p,i0,i1){const n=R.pts.length;i0=Math.max(0,Math.floor(i0||0));i1=(i1==null)?n-1:Math.min(n-1,Math.floor(i1));const kx=Math.cos(toR(p[0]))*111320,ky=110574;let best={off:Infinity,d:0,i:0};for(let i=i0;i<i1;i++){const a=R.pts[i],b=R.pts[i+1];const ax=(a[1]-p[1])*kx,ay=(a[0]-p[0])*ky,dx=(b[1]-a[1])*kx,dy=(b[0]-a[0])*ky;const L2=dx*dx+dy*dy;let t=L2?-(ax*dx+ay*dy)/L2:0;t=t<0?0:t>1?1:t;const off=Math.hypot(ax+t*dx,ay+t*dy);if(off<best.off)best={off,d:R.cum[i]+t*(R.cum[i+1]-R.cum[i]),i}}return best}
 function projOf(s){if(!E.route)return null;if(s._rid!==E.route.id){s._pr=project(E.route,s.p);s._rid=E.route.id}return s._pr}
-const demoRoute=()=>makeRoute(DEMO_PTS,DEMO_NAME,{demo:true,toName:'Phoenixville'});
+const curDemo=()=>DEMOS.find(d=>d.id===prefs.demo)||DEMOS[0];
+const demoRoute=()=>{const d=curDemo();return makeRoute(d.pts,d.name,{demo:d.id,toName:d.to})};
 
 /* ================= network: routing, places, Wikipedia ================= */
 async function getJSON(url,opts,ms){const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),ms||12000);try{const r=await fetch(url,Object.assign({signal:ctl.signal},opts||{}));if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(tm)}}
@@ -799,8 +806,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 let rafId=0,lastFrame=0,acc=0,starting=false;
 function simLoop(ts){if(!E.running||E.mode!=='sim')return;const dt=Math.min(.25,(ts-lastFrame)/1000);lastFrame=ts;acc+=dt;
  if(acc>=.1){const step=prefs.spd==='real'?acc:acc*(+prefs.spd)*60;acc=0;tick(step)}renderFrame();if(E.running)rafId=requestAnimationFrame(simLoop)}
-async function upgradeDemo(){if(!E.route||!E.route.demo||E.route.real)return;planMsg('Loading the demo route…');
- try{const r=await osrm(DEMO_VIA);setRoute(makeRoute(r.pts,DEMO_NAME,{demo:true,real:true,toName:'Phoenixville',dur:r.dur}),true);planMsg('Demo route: Port Chester to Phoenixville on I-287 and US-202.')}
+async function upgradeDemo(){if(!E.route||!E.route.demo||E.route.real)return;const d=DEMOS.find(x=>x.id===E.route.demo)||DEMOS[0];planMsg('Loading the demo route…');
+ try{const r=await osrm(d.via);setRoute(makeRoute(r.pts,d.name,{demo:d.id,real:true,toName:d.to,dur:r.dur}),true);planMsg(`Demo route: ${d.msg}.`)}
  catch(e){planMsg(framed?'Using a simplified demo route. Real road routing works on the GitHub copy.':'Using a simplified demo route.')}}
 async function startDrive(mode){
  if(starting||E.running)return;starting=true;
@@ -938,7 +945,7 @@ function renderControls(){
  const idle=E.phase==='idle'||E.phase==='ended';$('idleBtns').hidden=!idle;$('runBtns').hidden=idle;
  $('pause').textContent=E.phase==='paused'?'Resume':'Pause';
  $('goGps').textContent=E.phase==='ended'?'Drive again with GPS':'Drive with GPS';$('goSim').textContent=E.phase==='ended'?'Simulate again':'Simulate';
- $('plan').disabled=E.mode==='sim'&&!idle;$('demo').disabled=!idle;
+ $('plan').disabled=E.mode==='sim'&&!idle;$('demo').disabled=!idle;$('demoSel').disabled=!idle;
 }
 function renderDash(){
  const miles=(E.route&&E.phase!=='idle'&&!(E.mode==='gps'&&!E.dest))?E.along/MI:E.odo/MI;
@@ -1039,7 +1046,10 @@ function wire(){
  seg('nar',prefs.spoken?'spoken':'text',v=>{prefs.spoken=v==='spoken';savePrefs();if(!prefs.spoken&&E.story&&E.story.speaking){Voice.stop();E.story.speaking=false;E.story.startT=E.t;E.story.real=performance.now()}});
  $('from').value=prefs.from||'';$('to').value=prefs.to||'';
  $('plan').onclick=()=>planRoute();$('to').addEventListener('keydown',e=>{if(e.key==='Enter')planRoute()});
- $('demo').onclick=()=>{$('to').value='';$('from').value='';prefs.to='';prefs.from='';savePrefs();E.dest=null;setRoute(demoRoute(),true);planMsg('Demo route loaded: Port Chester to Phoenixville on I-287 and US-202.')};
+ const loadDemo=()=>{$('to').value='';$('from').value='';prefs.to='';prefs.from='';savePrefs();E.dest=null;setRoute(demoRoute(),true);planMsg(`Demo route loaded: ${curDemo().msg}.`)};
+ $('demoSel').innerHTML=DEMOS.map(d=>`<option value="${d.id}">${esc(d.from)} → ${esc(d.to)}</option>`).join('');$('demoSel').value=curDemo().id;
+ $('demoSel').onchange=e=>{prefs.demo=e.target.value;loadDemo()};
+ $('demo').onclick=loadDemo;
  $('voiceSel').onchange=e=>{Voice.v=Voice.list.find(v=>v.name===e.target.value)||Voice.v;prefs.voice=Voice.v?Voice.v.name:'';savePrefs()};
  $('rate').value=String(prefs.rate);$('rate').onchange=e=>{prefs.rate=+e.target.value;savePrefs()};
  $('testVoice').onclick=()=>{if(E.story&&E.story.speaking)return;Voice.speak('The Tappan Zee is about three miles across, the widest point of the Hudson.',null,()=>spMsg(''))};
@@ -1060,7 +1070,7 @@ async function boot(){
  window.addEventListener('resize',()=>renderStrip());
  wire();initMap();
  for(const c of CURATED)addStory(Object.assign({src:'curated',kind:c.pts?'sight':'area',p:c.pts?c.pts[0]:c.at},c));
- setRoute(demoRoute(),true);if(prefs.to)planMsg(`Last destination: ${prefs.to}. Tap Plan route to load it.`);
+ setRoute(demoRoute(),true);planMsg(prefs.to?`Last destination: ${prefs.to}. Tap Plan route to load it.`:`Demo route loaded: ${curDemo().msg}.`);
  Voice.init();renderAll();
  await spHandleRedirect();renderSp();if(Sp.connected()&&prefs.src.artists)loadArtists();
 }

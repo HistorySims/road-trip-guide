@@ -18,7 +18,7 @@ It has to be served over https for GPS, the wake lock and Spotify sign-in to wor
 - Keep the screen on and the page in front. iPhone stops location updates when the screen locks or Safari goes to the background.
 - Set it up before you pull out. It's built to run hands-free.
 
-**Simulate** runs a drive at your desk. With no destination it uses the Port Chester to Phoenixville demo route.
+**Simulate** runs a drive at your desk. With no destination it uses the demo route picked next to the **Demo route** button: Port Chester to Phoenixville (I-287 and US-202) or White Plains to Cairo, NY (I-287, the Thruway and NY-32).
 
 ## Spotify (optional)
 
