@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b6946">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Roadside Radio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+/* Layout: phone-on-the-dash first. Map, then a TripTik-style strip of what's ahead, then the story "marker" plate, controls, settings and the log. Two columns on desktop. */
+:root{
+  --paper:#e8ebe3; --sheet:#f7f8f3; --ink:#1a2321; --muted:#5b6762; --line:#cdd3c8; --mapbg:#dfe3da;
+  --route:#c3342a; --sign:#1b6946; --sign-ink:#f3f7f2; --on-cat:#fbfaf5;
+  --history:#7b4920; --science:#1f6787; --music:#71419a; --oddity:#946d05;
+  --good:#2c8a4e; --warn:#b4771b; --bad:#b8392f;
+  --display:"Overpass","Arial Narrow",system-ui,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"Overpass Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e;
+  --route:#ff6a5b; --sign:#2f9b6b; --sign-ink:#0c1311; --on-cat:#0f1513;
+  --history:#d58b54; --science:#5cb1d3; --music:#b98ae0; --oddity:#e2b33f;
+  --good:#4dc47b; --warn:#e3a64a; --bad:#ff6a5b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1412; --sheet:#151d1a; --ink:#e1e7df; --muted:#8e9b95; --line:#26312d; --mapbg:#18211e;
+  --route:#ff6a5b; --sign:#2f9b6b; --sign-ink:#0c1311; --on-cat:#0f1513;
+  --history:#d58b54; --science:#5cb1d3; --music:#b98ae0; --oddity:#e2b33f;
+  --good:#4dc47b; --warn:#e3a64a; --bad:#ff6a5b; color-scheme:dark}
+
+/* Leaflet essentials, inlined so the map works even where the stylesheet can't load */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent}
+.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
+.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,.leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important;width:auto;padding:0}
+.leaflet-container.leaflet-touch-zoom{touch-action:pan-x pan-y}
+.leaflet-container.leaflet-touch-drag{touch-action:none}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{touch-action:none}
+.leaflet-tile{filter:inherit;visibility:hidden}
+.leaflet-tile-loaded{visibility:inherit}
+.leaflet-zoom-box{width:0;height:0;box-sizing:border-box;z-index:800}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
+.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-right .leaflet-control{float:right}
+.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}
+.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}
+.leaflet-fade-anim .leaflet-popup{opacity:0;transition:opacity .2s linear}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}
+.leaflet-grab{cursor:grab}
+.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive{cursor:grabbing}
+.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}
+.leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive{pointer-events:auto}
+.leaflet-bar a{display:block;width:30px;height:30px;line-height:30px;text-align:center;text-decoration:none;font:bold 18px/30px Menlo,monospace}
+.leaflet-control-attribution{margin:0;padding:0 5px;line-height:1.4;font-size:10px}
+.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}
+.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:10px}
+.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}
+.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;transform:rotate(45deg)}
+.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:28px;height:28px;font:18px/28px Tahoma,Verdana,sans-serif;text-decoration:none;background:transparent}
+
+/* Page */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--paper);color:var(--ink)}
+body{margin:0;font-family:var(--display);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+.app{max-width:1200px;margin:0 auto;display:grid;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 18px}
+.brand{min-width:0}
+h1{margin:0;font-weight:800;font-size:clamp(1.55rem,4.8vw,2.2rem);letter-spacing:-.015em;line-height:1;text-wrap:balance}
+h1 span{color:var(--route)}
+.sub{margin-top:6px;font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);overflow-wrap:anywhere}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--sheet);font-family:var(--mono);font-size:.68rem;white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.55}
+.pill.good i{background:var(--good);opacity:1}.pill.warn i{background:var(--warn);opacity:1}.pill.bad i{background:var(--bad);opacity:1}
+.layout{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:920px){.layout{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}}
+.col{display:grid;gap:14px;min-width:0}
+
+.mapbox{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--mapbg)}
+#map{height:min(48vh,460px);min-height:260px;background:var(--mapbg)}
+@media(min-width:920px){#map{height:540px}}
+.recenter{position:absolute;z-index:1000;left:50%;transform:translateX(-50%);bottom:14px;background:var(--sheet)!important}
+.mapnote{position:absolute;z-index:1000;left:56px;right:10px;top:10px;padding:6px 10px;border-radius:7px;background:color-mix(in srgb,var(--sheet) 92%,transparent);border:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+
+.strip{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 4px}
+.strip-h{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+#strip{display:block;width:100%;height:auto;margin-top:2px;overflow:visible}
+.st-road{stroke:var(--ink);stroke-width:12;stroke-linecap:round}
+.st-dash{stroke:var(--paper);stroke-width:1.6;stroke-dasharray:7 8}
+.st-tick{stroke:var(--muted);stroke-width:1.2}
+.st-mi{font:600 9.5px var(--mono);fill:var(--muted);letter-spacing:.06em}
+.st-dot{fill:var(--c);stroke:var(--sheet);stroke-width:2}
+.st-lead{stroke:var(--c);stroke-width:1.2}
+.st-lab{font:600 11.5px var(--display);fill:var(--ink)}
+.st-car circle{fill:var(--route);stroke:var(--sheet);stroke-width:3}
+.st-car path{fill:var(--sheet)}
+.st-none{font:600 12px var(--display);fill:var(--muted)}
+
+.dash{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));align-items:stretch}
+.mm{display:grid;justify-items:center;align-content:center;min-width:74px;margin-right:8px;padding:6px 12px;border-radius:7px;background:var(--sign);color:var(--sign-ink);box-shadow:inset 0 0 0 2px var(--sign),inset 0 0 0 4px var(--sign-ink)}
+.mm small{font-size:.6rem;font-weight:800;letter-spacing:.16em}
+.mm strong{font-size:1.65rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.stat{display:grid;align-content:center;min-width:0;padding:2px 8px;border-left:1px solid var(--line)}
+.stat small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat small{font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stat strong{font-family:var(--mono);font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums}
+
+.now{--c:var(--ink);background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.now .band{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;background:var(--ink);color:var(--paper);font-size:.69rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.now.story{border:3px solid var(--c);border-radius:15px;padding:3px;background:color-mix(in srgb,var(--c) 8%,var(--sheet))}
+.now.story .band{background:var(--c);color:var(--on-cat);border-radius:9px 9px 3px 3px}
+.now .body{padding:14px 16px;display:grid;gap:9px}
+.now .title{margin:0;font-size:clamp(1.25rem,3.6vw,1.55rem);font-weight:800;line-height:1.12;text-wrap:balance}
+.now .lead{font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--c)}
+.now.song .lead,.now.plain .lead{color:var(--muted)}
+.now .narr{margin:0;font-family:var(--body);font-size:1.06rem;line-height:1.6;max-width:62ch}
+.now .artist{color:var(--muted);font-size:1rem}
+.now .meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.now .meta b{color:var(--ink);font-weight:600}
+.c-history{--c:var(--history)}.c-science{--c:var(--science)}.c-music{--c:var(--music)}.c-oddity{--c:var(--oddity)}
+.bar{height:5px;border-radius:3px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--c)}
+.chip{font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.02em;text-transform:none;padding:2px 7px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.next{font-family:var(--mono);font-size:.72rem;color:var(--muted);padding:9px 16px;border-top:1px dashed var(--line)}
+.now.story .next{border-top-color:color-mix(in srgb,var(--c) 35%,transparent)}
+
+.ctl{display:grid;gap:12px;background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btns button{flex:1 1 0;min-width:96px}
+button{min-height:44px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:7px;background:transparent;font-weight:600;font-size:.92rem;cursor:pointer}
+button:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--sign);outline-offset:2px}
+button.primary{background:var(--sign);border-color:var(--sign);color:var(--sign-ink)}
+button.primary:hover{background:color-mix(in srgb,var(--sign) 85%,var(--ink))}
+button.ghost{border-color:var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.mini{min-height:28px;padding:2px 9px;font-size:.75rem;border-width:1px;vertical-align:middle}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.lab{min-width:84px;font-size:.66rem;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:7px;overflow:hidden;max-width:100%}
+.seg button{min-height:38px;border:0;border-radius:0;border-right:1px solid var(--line);padding:6px 11px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.hint{margin:0;font-family:var(--body);font-size:.85rem;line-height:1.45;color:var(--muted)}
+
+.setup{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r)}
+.setup summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-weight:800;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase}
+.setup summary::-webkit-details-marker{display:none}
+.setup summary::after{content:"+";font-size:1.15rem;font-weight:600;line-height:1}
+.setup[open] summary::after{content:"\2212"}
+.sum-r{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);font-size:.72rem}
+.sec{padding:12px 14px 14px;border-top:1px solid var(--line);display:grid;gap:10px}
+.sec h3{margin:0;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase}
+.opt{font-weight:400;color:var(--muted);letter-spacing:.04em;margin-left:6px}
+.fields{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center}
+.fields label{font-size:.82rem;color:var(--muted)}
+input,select{min-height:42px;width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:7px;background:var(--paper)}
+input:focus,select:focus{border-color:var(--ink)}
+.chk{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:.92rem;cursor:pointer}
+.chk input{width:auto;min-height:0;accent-color:var(--sign)}
+.chk span{color:var(--muted);font-size:.8rem}
+.msg{margin:0;font-family:var(--mono);font-size:.74rem;color:var(--muted);overflow-wrap:anywhere}
+.steps{margin:0;padding-left:1.2em;font-size:.88rem;display:grid;gap:5px}
+code{font-family:var(--mono);font-size:.76rem;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:1px 5px;word-break:break-all}
+
+.log{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r)}
+.log h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+.log h2 span:last-child{font-family:var(--mono);letter-spacing:0;text-transform:none;color:var(--muted);font-weight:400}
+.log ol{list-style:none;margin:0;padding:0;max-height:380px;overflow:auto}
+.log li{display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:.84rem;align-items:baseline}
+.log li:last-child{border-bottom:0}
+.log .m{font-family:var(--mono);font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.log .tag{font-family:var(--mono);font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;margin-right:6px;color:var(--muted)}
+.log li.story .tag{color:var(--sign)}
+.log li.miss,.log li.pass{color:var(--muted)}
+.log li.fade .tag{color:var(--route)}
+.log .empty{display:block;color:var(--muted)}
+.foot{font-family:var(--body);font-size:.8rem;line-height:1.5;color:var(--muted);max-width:80ch}
+
+/* Map layers */
+.pin{fill:var(--c);fill-opacity:1;stroke:var(--sheet);stroke-width:1.5}
+.pin.wiki{fill-opacity:.82;stroke-width:1}
+.pin.old{fill-opacity:.42}
+.pin.passed{fill-opacity:.16;stroke-opacity:.35}
+.pin.played{stroke:var(--ink);stroke-width:3;fill-opacity:1}
+.pin.off,.dpin.off{display:none}
+.dpin{background:none;border:0}
+.dpin i{display:block;width:12px;height:12px;margin:2px;transform:rotate(45deg);background:var(--c);border:2px solid var(--ink);border-radius:2px}
+.dpin.passed{opacity:.3}.dpin.old i{opacity:.55}.dpin.played i{box-shadow:0 0 0 2px var(--sheet),0 0 0 4px var(--ink)}
+.rt-case{stroke:var(--sheet);stroke-width:9;stroke-opacity:.95;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rt-line{stroke:var(--route);stroke-width:4.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rt-done{stroke:var(--ink);stroke-opacity:.42;stroke-width:4.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.zone{stroke:var(--c,var(--ink));stroke-width:2;stroke-dasharray:6 7;fill:var(--c,var(--ink));fill-opacity:.08}
+.car{background:none;border:0}
+.car-a{width:30px;height:30px;display:grid;place-items:center;transition:transform .35s ease}
+.car-a svg{width:26px;height:26px;fill:var(--route);stroke:var(--sheet);stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .35))}
+.leaflet-container{font-family:var(--display);background:var(--mapbg)}
+.leaflet-bar{border:1.5px solid var(--ink);border-radius:7px;overflow:hidden}
+.leaflet-bar a{background:var(--sheet);color:var(--ink);border-bottom:1px solid var(--line)}
+.leaflet-bar a:last-child{border-bottom:0}
+.leaflet-bar a:hover{background:var(--paper)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--sheet) 85%,transparent);color:var(--muted)}
+.leaflet-control-attribution a{color:var(--muted)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--sheet);color:var(--ink);box-shadow:0 4px 18px rgb(0 0 0 / .25)}
+.leaflet-popup-content{margin:12px 14px;font-size:.85rem;line-height:1.35}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.pop{display:grid;gap:5px;min-width:180px}
+.pop-k{font-family:var(--mono);font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--c)}
+.pop-t{font-weight:800;font-size:1rem;line-height:1.2}
+.pop-s{font-size:.78rem;color:var(--muted)}
+.pop-b{display:flex;gap:10px;align-items:center;margin-top:3px}
+.pop-b button{min-height:32px;padding:4px 10px;font-size:.8rem}
+.pop-b a{font-size:.8rem}
+@media (prefers-reduced-motion:reduce){.car-a{transition:none}.leaflet-zoom-anim .leaflet-zoom-animated{transition:none}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Roadside <span>Radio</span></h1>
+      <div class="sub" id="routeName">Port Chester → Phoenixville · demo route</div>
+    </div>
+    <div class="pills" aria-live="polite">
+      <span class="pill" id="pGps"><i></i><span>GPS off</span></span>
+      <span class="pill" id="pWiki"><i></i><span>Wikipedia</span></span>
+      <span class="pill" id="pSp"><i></i><span>Spotify off</span></span>
+      <span class="pill" id="pScreen" hidden><i></i><span>Screen</span></span>
+      <span class="pill" id="pCount"><i></i><span>0 stories</span></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="col">
+      <div class="mapbox">
+        <div id="map" role="region" aria-label="Map of the route and stories"></div>
+        <button id="recenter" class="recenter" hidden>Follow the car</button>
+        <div id="mapNote" class="mapnote" hidden></div>
+      </div>
+      <section class="strip" aria-label="Stories ahead">
+        <div class="strip-h"><span>Ahead · next 20 miles</span><span id="aheadN"></span></div>
+        <svg id="strip" viewBox="0 0 400 108" role="img" aria-label="Upcoming stories along the road"></svg>
+      </section>
+      <div class="dash">
+        <div class="mm"><small>MILE</small><strong id="dMile">0</strong></div>
+        <div class="stat"><small>Drive time</small><strong id="dTime">0:00</strong></div>
+        <div class="stat"><small>Played</small><strong id="dPlayed">0</strong></div>
+        <div class="stat"><small>Passed by</small><strong id="dPassed">0</strong></div>
+        <div class="stat"><small>Drive</small><strong id="dDrive">#1</strong></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <section class="now plain" id="now" aria-live="polite"></section>
+
+      <section class="ctl" aria-label="Drive controls">
+        <div class="btns" id="idleBtns"><button class="primary" id="goGps">Drive with GPS</button><button id="goSim">Simulate</button></div>
+        <div class="btns" id="runBtns" hidden><button class="primary" id="pause">Pause</button><button id="skip">Skip</button><button id="end">End drive</button></div>
+        <div class="row"><span class="lab" id="lFreq">Stories</span>
+          <div class="seg" id="freq" role="group" aria-labelledby="lFreq"><button data-v="light">Light</button><button data-v="medium">Medium</button><button data-v="heavy">Heavy</button></div></div>
+        <div class="row"><span class="lab" id="lSpd">Sim speed</span>
+          <div class="seg" id="spd" role="group" aria-labelledby="lSpd"><button data-v="real" title="Real driving speed. Use this to test Spotify at your desk.">Real</button><button data-v="1">1×</button><button data-v="2">2×</button><button data-v="4">4×</button><button data-v="8">8×</button></div></div>
+        <div class="row"><span class="lab" id="lNar">Narration</span>
+          <div class="seg" id="nar" role="group" aria-labelledby="lNar"><button data-v="spoken">Spoken</button><button data-v="text">Text only</button></div></div>
+        <p class="hint">Simulate: 1× is one minute of driving per second, and the car waits while a story is read aloud. Real runs at driving speed so you can test Spotify at a desk.</p>
+      </section>
+
+      <details class="setup" id="setup" open>
+        <summary><span>Trip &amp; settings</span><span class="sum-r" id="setupSum"></span></summary>
+        <div class="sec">
+          <h3>Trip</h3>
+          <div class="fields">
+            <label for="from">From</label><input id="from" autocomplete="off" placeholder="My location">
+            <label for="to">To</label><input id="to" autocomplete="off" placeholder="Blank means free roam">
+          </div>
+          <div class="row"><button id="plan">Plan route</button><button id="demo" class="ghost">Demo route</button></div>
+          <p class="msg" id="planMsg">Demo route loaded: Port Chester to Phoenixville on I-287 and US-202.</p>
+        </div>
+        <div class="sec">
+          <h3>Voice</h3>
+          <div class="fields">
+            <label for="voiceSel">Voice</label><select id="voiceSel"></select>
+            <label for="rate">Pace</label><select id="rate"><option value="0.9">Slower</option><option value="1">Normal</option><option value="1.1">Faster</option></select>
+          </div>
+          <div class="row"><button id="testVoice">Test voice</button></div>
+          <p class="hint">These are your device's built-in voices. On iPhone you can download a better one under Settings → Accessibility → Spoken Content → Voices → English. Pick an Enhanced or Premium voice, then reload this page.</p>
+        </div>
+        <div class="sec">
+          <h3>Story sources</h3>
+          <label class="chk"><input type="checkbox" id="srcCurated"> Hand-written <span>40 stories along the demo route and around Port Chester</span></label>
+          <label class="chk"><input type="checkbox" id="srcWiki"> Wikipedia <span>places within a few miles, anywhere you drive</span></label>
+          <label class="chk"><input type="checkbox" id="srcArtists"> Your artists' hometowns <span>needs Spotify</span></label>
+        </div>
+        <div class="sec">
+          <h3>Spotify <span class="opt">optional</span></h3>
+          <p class="hint">Lets the app pause your music between songs, tell the story, then play a song tied to the place. It needs Spotify Premium and a free developer app of your own.</p>
+          <ol class="steps">
+            <li>At <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>, create an app and tick Web API.</li>
+            <li>Add this exact Redirect URI: <code id="redir"></code> <button class="mini" id="copyRedir">Copy</button></li>
+            <li>Paste the app's Client ID below and connect.</li>
+          </ol>
+          <div class="fields"><label for="spClient">Client ID</label><input id="spClient" autocomplete="off" spellcheck="false" autocapitalize="off"></div>
+          <div class="row"><button id="spConnect">Connect Spotify</button><button id="spOut" class="ghost" hidden>Disconnect</button></div>
+          <p class="msg" id="spMsg"></p>
+        </div>
+        <div class="sec">
+          <h3>History</h3>
+          <p class="msg" id="histMsg"></p>
+          <div class="row"><button id="resetHist" class="ghost">Forget heard stories</button></div>
+        </div>
+      </details>
+
+      <section class="log" aria-label="Drive log">
+        <h2><span>Drive log</span><span id="logN"></span></h2>
+        <ol id="log"></ol>
+      </section>
+    </div>
+  </div>
+
+  <footer class="foot">Set it up before you pull out; it's built to run hands-free. Hand-written stories cover the Port Chester to Phoenixville demo route. Wikipedia text is CC BY-SA. Routes from OSRM and place search from Nominatim, both built on OpenStreetMap. Map tiles © CARTO and OpenStreetMap contributors.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function(){
+'use strict';
+/* ================= helpers ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const MI=1609.344, SIM_MPS=24.6; // simulated cruising speed, about 55 mph
+const toR=d=>d*Math.PI/180, toD=r=>r*180/Math.PI;
+function hav(a,b){const dLa=toR(b[0]-a[0]),dLo=toR(b[1]-a[1]);const x=Math.sin(dLa/2)**2+Math.cos(toR(a[0]))*Math.cos(toR(b[0]))*Math.sin(dLo/2)**2;return 12742000*Math.asin(Math.min(1,Math.sqrt(x)))}
+function brg(a,b){const f1=toR(a[0]),f2=toR(b[0]),dl=toR(b[1]-a[1]);const y=Math.sin(dl)*Math.cos(f2),x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);return(toD(Math.atan2(y,x))+360)%360}
+function destPt(p,h,d){const dr=d/6371000,f1=toR(p[0]),l1=toR(p[1]),th=toR(h);const f2=Math.asin(Math.sin(f1)*Math.cos(dr)+Math.cos(f1)*Math.sin(dr)*Math.cos(th));const l2=l1+Math.atan2(Math.sin(th)*Math.sin(dr)*Math.cos(f1),Math.cos(dr)-Math.sin(f1)*Math.sin(f2));return[toD(f2),toD(l2)]}
+const rel=(b,h)=>((b-h+540)%360)-180;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const clock=sec=>{const m=Math.floor(Math.max(0,sec)/60);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+const mmss=sec=>{sec=Math.max(0,Math.round(sec));return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')};
+const fmtDur=sec=>{const m=Math.round(sec/60);return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`};
+const trunc=(s,n)=>s.length>n?s.slice(0,n-1).trimEnd()+'…':s;
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
+const isHalloween=()=>{const d=new Date();return d.getMonth()===9&&d.getDate()===31};
+const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const CAT={history:'History',science:'Science',music:'Music',oddity:'Oddity'};
+const SRC={curated:'hand-written',wiki:'Wikipedia',artist:'your artists'};
+
+/* ================= data ================= */
+const TRACKS={ // title, artist, minutes, plays only after its story
+ bertha:["Bertha","Grateful Dead",5.6,1], robeson:["Ol' Man River","Paul Robeson",3.4,1], lovetrain:["Love Train","The O'Jays",3.0,1],
+ mornin:["Oh, What a Beautiful Mornin'","Gordon MacRae",3.1,1], redeyes:["Red Eyes","The War on Drugs",5.0,1],
+ richgirl:["Rich Girl","Daryl Hall & John Oates",2.4], thunder:["Thunder Road","Bruce Springsteen",4.8], dreams:["Dreams","Fleetwood Mac",4.3],
+ nowhere:["Road to Nowhere","Talking Heads",4.3], tangled:["Tangled Up in Blue","Bob Dylan",5.7], jessica:["Jessica","The Allman Brothers Band",7.0],
+ chanchan:["Chan Chan","Buena Vista Social Club",4.3], coyote:["Coyote","Joni Mitchell",5.0], jesusetc:["Jesus, Etc.","Wilco",3.8],
+ allfriends:["All My Friends","LCD Soundsystem",7.6], sultans:["Sultans of Swing","Dire Straits",5.8], heroes:["Heroes","David Bowie",6.1],
+ lodi:["Lodi","Creedence Clearwater Revival",3.1]};
+
+const CURATED=[
+ {id:'capitol',cat:'music',at:[41.0013,-73.6657],r:6000,score:.95,song:{t:'Bertha',a:'Grateful Dead',key:'bertha'},title:"The Capitol Theatre's dream experiment",
+  text:"The Capitol on Westchester Avenue opened in 1926 as a movie palace and became a rock room around 1970. The Grateful Dead played a run of famous shows here in 1970 and 1971. During the February 1971 run, researchers from Maimonides Medical Center asked the crowd to mentally send images flashed on the screen to a sleeping volunteer in Brooklyn. Several songs got their first live airing that week, including Bertha."},
+ {id:'sawpit',cat:'history',at:[41.0018,-73.6654],r:5000,score:.55,title:"Port Chester used to be Saw Pit",
+  text:"Until 1837 this village was called Saw Pit, after the pits where colonists sawed timber for boats on the Byram River. Residents decided a growing port deserved a better name. The Byram is still the state line with Connecticut."},
+ {id:'putnam',cat:'history',at:[41.0283,-73.6370],r:5500,score:.75,title:"Putnam's ride down the hill",
+  text:"In February 1779, British dragoons surprised General Israel Putnam at Horseneck, now Greenwich, just over the state line. Putnam got away by riding his horse straight down a steep, rocky slope the dragoons wouldn't follow. The house where he'd been staying, now called Putnam Cottage, still stands on East Putnam Avenue."},
+ {id:'jay',cat:'history',at:[40.9604,-73.6872],r:5000,score:.6,title:"John Jay's boyhood in Rye",
+  text:"John Jay, the first Chief Justice of the United States, grew up on his family's farm in Rye, above Long Island Sound. He's buried in the family cemetery there, and the Jay Heritage Center now looks after the estate."},
+ {id:'playland',cat:'oddity',at:[40.9696,-73.6726],r:5000,score:.7,title:"Playland's Dragon Coaster",
+  text:"Rye Playland opened in 1928 as a planned Art Deco amusement park, built and owned by Westchester County. Its wooden Dragon Coaster dates to 1929. The carnival scenes in the 1988 movie Big were filmed here."},
+ {id:'whiteplains',cat:'history',at:[41.0300,-73.7840],r:8000,score:.75,title:"Chatterton Hill, October 1776",
+  text:"On October 28, 1776, British and Hessian troops stormed Chatterton Hill, just west of downtown White Plains. They took it, but Washington pulled the army north intact. It was a loss on paper and a survival in practice, which describes most of 1776."},
+ {id:'andre',cat:'history',at:[41.0833,-73.8597],r:6000,score:.85,title:"The papers in André's boot",
+  text:"In September 1780 three militiamen stopped a traveler near Tarrytown. He was British Major John André, and the papers hidden in his boot laid out Benedict Arnold's plan to hand over West Point. Arnold escaped to a British ship. André was hanged."},
+ {id:'sleepy',cat:'oddity',at:[41.0905,-73.8619],r:7000,score:.9,title:()=>isHalloween()?"It's Halloween, and you're passing Sleepy Hollow":"Passing Sleepy Hollow",
+  text:"Washington Irving published The Legend of Sleepy Hollow in 1820 and set it in the valley just north of Tarrytown. Irving is buried in Sleepy Hollow Cemetery. The village was called North Tarrytown until 1996, when residents voted to take the name from the story."},
+ {id:'palisades',cat:'science',pts:[[41.0722,-73.8780],[41.0742,-73.9000]],r:1300,look:[40.98,-73.912],score:.9,title:()=>`Look ${side([40.98,-73.912])}: the Palisades`,
+  text:"The cliffs along the west bank, running south from here, are the Palisades. They began as magma that pushed between layers of sediment about 200 million years ago, as Pangaea pulled apart, and cooled underground into dark columns of diabase. Erosion stripped away the softer rock on top and left the wall."},
+ {id:'bridge',cat:'history',at:[41.0732,-73.8890],r:3500,score:.7,title:"Why the bridge is at the widest spot",
+  text:"The Tappan Zee is about three miles across, the widest point of the Hudson. The original 1955 bridge went here partly because it sat just outside the Port Authority's 25-mile zone, so the Thruway Authority could collect the tolls. The Mario Cuomo Bridge replaced it in 2017 and 2018."},
+ {id:'zee',cat:'oddity',at:[41.0732,-73.8890],r:5000,score:.45,title:"Tappan Zee means Tappan Sea",
+  text:"Tappan comes from the Lenape group who lived on the west bank. Zee is Dutch for sea. Dutch sailors thought a river this wide deserved the upgrade."},
+ {id:'tidal',cat:'science',at:[41.1000,-73.8800],r:9000,score:.7,title:"A river that flows both ways",
+  text:"The Hudson below Troy is a tidal estuary. Ocean tides push salt water upstream and reverse the current twice a day, as far as 150 miles north. The Lenape name usually translated as the river that flows both ways was a plain description."},
+ {id:'hopper',cat:'history',at:[41.0907,-73.9179],r:5000,score:.65,title:"Edward Hopper's Nyack",
+  text:"Edward Hopper was born in Nyack in 1882 and grew up a few blocks from the river. His boyhood home on North Broadway is now an art center. The lonely light in his paintings started on these streets."},
+ {id:'ramapo',cat:'science',at:[41.1148,-74.1496],r:10000,score:.6,title:"Riding the Ramapo Fault",
+  text:"Through here I-287 follows the Ramapo Fault, the edge between the billion-year-old granite of the Highlands and the younger red rocks of the Newark Basin to the south. It's mostly quiet, but it still produces small earthquakes."},
+ {id:'ford',cat:'history',at:[41.0930,-74.1500],r:6000,score:.5,title:"The Mahwah Ford plant",
+  text:"Ford opened an assembly plant in Mahwah in 1955 that ranked among the largest in the country, building millions of cars and trucks. It closed in 1980 as the American auto industry contracted, and thousands of jobs went with it."},
+ {id:'tracks',cat:'science',at:[40.8207,-74.3093],r:14000,score:.8,title:"Dinosaur footprints in the suburbs",
+  text:"In a Roseland quarry in 1971, a teenager found Early Jurassic footprints. Excavators turned up hundreds more on Riker Hill. The Newark Basin was a rift valley full of lakes then, and its mudflats recorded who walked by."},
+ {id:'passaic',cat:'science',at:[40.7600,-74.4500],r:15000,score:.7,title:"The lake that isn't here anymore",
+  text:"When the last ice sheet melted back, its meltwater pooled behind the hills into Glacial Lake Passaic, roughly 30 miles long. When it drained it left flat, wet ground behind. The Great Swamp and Troy Meadows are what's left of the lake bed."},
+ {id:'moraine',cat:'science',at:[40.7970,-74.4810],r:7000,score:.6,title:"Where the ice stopped",
+  text:"The terminal moraine of the last glaciation runs through Morristown and Madison. It's the ridge of rubble the ice sheet bulldozed ahead of itself and dropped when it stopped advancing, about 20,000 years ago."},
+ {id:'jockey',cat:'history',at:[40.7608,-74.5401],r:9000,score:.85,title:"The winter worse than Valley Forge",
+  text:"Washington's army spent 1779 to 1780 at Jockey Hollow, near Morristown, through the harshest winter of the century. Snowstorm followed snowstorm, and soldiers went days without food. In May 1780 the Connecticut regiments mutinied over unpaid wages and empty bellies. Valley Forge gets the fame. This was worse."},
+ {id:'speedwell',cat:'science',at:[40.8065,-74.4822],r:5000,score:.75,title:"The telegraph's first public test",
+  text:"In January 1838, at the Speedwell Iron Works in Morristown, Samuel Morse and Alfred Vail sent a message through two miles of wire looped around the factory. The message was: A patient waiter is no loser. The Vail family's ironworks had paid for the experiments."},
+ {id:'nast',cat:'oddity',at:[40.7920,-74.4780],r:6000,score:.7,title:"Santa Claus lived in Morristown",
+  text:"Thomas Nast, the Harper's Weekly cartoonist, lived here. His drawings set the modern look of Santa Claus: fur suit, belly, North Pole workshop. He also gave the Republicans their elephant and Tammany Hall its tiger."},
+ {id:'pluckemin',cat:'history',at:[40.6487,-74.6378],r:7000,score:.5,title:"The artillery school at Pluckemin",
+  text:"In the winter of 1778 to 1779, Henry Knox set up the Continental Army's artillery park near Pluckemin, close to the Bedminster exit. Officers studied gunnery in a purpose-built academy building, which is why it's often called the first American military academy."},
+ {id:'robeson',cat:'music',at:[40.5743,-74.6099],r:8000,score:.9,song:{t:"Ol' Man River",a:'Paul Robeson',key:'robeson'},title:"Paul Robeson grew up in Somerville",
+  text:"Paul Robeson's father was a pastor in Somerville, and Robeson graduated from Somerville High in 1915. He went on to Rutgers, where he was an All-American and valedictorian, then to the stage. His voice made Ol' Man River his for life, and he later changed its words from resignation to protest."},
+ {id:'wallace',cat:'history',at:[40.5703,-74.6201],r:5000,score:.5,title:"Washington's Somerville headquarters",
+  text:"During the Middlebrook encampment of 1778 to 1779, Washington rented the Wallace House in Somerville as his headquarters. It still stands on Washington Place, a few blocks off 202."},
+ {id:'porkroll',cat:'oddity',at:[40.5500,-74.7500],r:30000,score:.75,title:"Taylor ham or pork roll",
+  text:"John Taylor of Trenton started selling Taylor's Prepared Ham in 1856. After the 1906 Pure Food and Drug Act it couldn't be called ham, because it didn't meet the definition, so it became pork roll. North Jersey kept saying Taylor ham anyway, and you're still in Taylor ham country here."},
+ {id:'lindbergh',cat:'history',at:[40.5126,-74.8593],r:7000,score:.85,title:"The trial of the century, Flemington",
+  text:"In 1935 the Hunterdon County Courthouse in Flemington hosted the trial of Bruno Richard Hauptmann for the kidnapping and murder of Charles Lindbergh's infant son. Reporters and crowds overwhelmed the small town for six weeks. Hauptmann was convicted and executed in 1936, and the arguments about the evidence haven't stopped."},
+ {id:'undammed',cat:'science',at:[40.4200,-74.9700],r:12000,score:.6,title:"The undammed river",
+  text:"No dam crosses the main stem of the Delaware. A big one was planned at Tocks Island in the 1960s; land was taken, and then the project was abandoned. So the river still floods and runs the way it always has."},
+ {id:'delaware',cat:'history',pts:[[40.3793,-74.9555],[40.3644,-74.9472]],r:1200,score:.85,title:"Crossing the Delaware",
+  text:()=>{const w=E.heading!=null&&E.heading>180&&E.heading<360;return `You're crossing the Delaware ${w?'into Pennsylvania':'into New Jersey'}. Around 1900, painters including Edward Redfield and William Lathrop settled along these banks and became the core of the Pennsylvania Impressionists. The river and the canal towpath below are the views they painted for decades.`}},
+ {id:'crossing',cat:'history',at:[40.2984,-74.8696],r:14000,score:.95,title:"Christmas night, 1776",
+  text:"Washington crossed the Delaware at McConkey's Ferry, downriver from here, on the night of December 25, 1776. Ice, sleet and a slipping schedule nearly sank the plan. The army surprised the Hessian garrison at Trenton the next morning, and the Revolution got its first real win in months."},
+ {id:'playhouse',cat:'oddity',at:[40.3638,-74.9500],r:4000,score:.55,title:"A theater in a gristmill",
+  text:"The Bucks County Playhouse opened in 1939 inside an old New Hope gristmill. A young Grace Kelly made her professional stage debut there in 1949."},
+ {id:'mercer',cat:'oddity',at:[40.3130,-75.1260],r:6000,score:.8,title:"Henry Mercer's concrete castles",
+  text:"Henry Chapman Mercer, archaeologist and tile maker, built three strange buildings in Doylestown in the early 1900s: Fonthill, his house; the Moravian Pottery and Tile Works; and the Mercer Museum. All three are hand-poured reinforced concrete. He didn't use blueprints much. He sketched and built."},
+ {id:'hammerstein',cat:'music',at:[40.3400,-75.1000],r:8000,score:.85,song:{t:"Oh, What a Beautiful Mornin'",a:'Gordon MacRae',key:'mornin'},title:"Hammerstein's farm and the kid next door",
+  text:"Oscar Hammerstein II lived on Highland Farm outside Doylestown. When Stephen Sondheim's mother moved nearby, the teenage Sondheim became a regular in the Hammerstein house, and Oscar became his teacher. Two eras of the American musical sat in the same living room."},
+ {id:'buck',cat:'history',at:[40.3880,-75.2440],r:12000,score:.55,title:"Pearl Buck's Green Hills Farm",
+  text:"Pearl S. Buck, the first American woman to win the Nobel Prize in Literature, bought a farmhouse in Perkasie in 1934. She wrote much of her later work there and founded an adoption agency for mixed-race children that other agencies wouldn't place."},
+ {id:'schuylkill',cat:'science',at:[40.1215,-75.3399],r:10000,score:.5,title:"The hidden river",
+  text:"Schuylkill is usually traced to Dutch for hidden creek or hidden river. Dutch explorers sailing up the Delaware missed its mouth behind islands and marsh. In the 1800s a canal along it carried anthracite coal down to Philadelphia."},
+ {id:'phillysound',cat:'music',at:[39.9526,-75.1652],r:32000,score:.85,song:{t:'Love Train',a:"The O'Jays",key:'lovetrain'},title:"The Sound of Philadelphia",
+  text:"Kenny Gamble and Leon Huff built Philadelphia International Records in the late 1960s and 70s, cutting lush, string-heavy soul at Sigma Sound Studios downtown. The O'Jays, Harold Melvin and the Blue Notes, Teddy Pendergrass. The house band, MFSB, defined a decade of radio."},
+ {id:'wod',cat:'music',at:[39.9526,-75.1652],r:32000,score:.6,song:{t:'Red Eyes',a:'The War on Drugs',key:'redeyes'},title:"A Philly band for the highway",
+  text:"The War on Drugs formed in Philadelphia in the mid-2000s, and their records are built for driving: long, hazy and always moving forward. Fitting for this stretch."},
+ {id:'kop',cat:'oddity',at:[40.0897,-75.3818],r:4000,score:.6,title:"Why King of Prussia",
+  text:"The town is named for an 18th-century inn, the King of Prussia Inn, which honored Frederick the Great. A Pennsylvania crossroads named after a Prussian monarch is now best known for a mall that's one of the largest in the country."},
+ {id:'valleyforge',cat:'history',pts:[[40.1060,-75.4280],[40.1100,-75.4420]],r:1600,look:[40.0970,-75.4440],score:.95,title:()=>`Valley Forge, off to your ${side([40.0970,-75.4440])}`,
+  text:"The Continental Army wintered here from December 1777 to June 1778. Somewhere around 2,000 soldiers died, mostly of disease. That spring Baron von Steuben, a Prussian officer with shaky English, drilled the troops on this ground into an army that could stand up to British regulars in the open."},
+ {id:'blob',cat:'oddity',at:[40.1337,-75.5158],r:5000,score:.9,title:"The Blob ate Phoenixville",
+  text:"The 1958 movie The Blob was filmed partly in Phoenixville, including the scene where the audience flees the Colonial Theatre. The theater still stands on Bridge Street, and every summer the town holds Blobfest and re-enacts the run."},
+ {id:'phoenix',cat:'history',at:[40.1309,-75.5178],r:5000,score:.7,title:"The Phoenix column",
+  text:"The Phoenix Iron Works made this a company town. In 1862 it patented the Phoenix column: hollow wrought-iron segments riveted into a tube that was light and strong. It went into bridges and elevated railways across the country."}
+];
+
+const DEMO_PTS=[[41.0020,-73.6660],[41.0340,-73.7630],[41.0550,-73.8200],[41.0712,-73.8703],[41.0758,-73.9143],[41.0950,-74.0100],[41.1150,-74.1500],[41.0880,-74.1800],[41.0300,-74.2400],[40.9900,-74.3000],[40.8600,-74.4200],[40.7970,-74.4810],[40.6800,-74.6450],[40.5740,-74.6100],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],[40.2450,-75.2350],[40.1050,-75.3400],[40.0890,-75.3960],[40.1080,-75.4370],[40.1300,-75.5150]];
+const DEMO_VIA=[DEMO_PTS[0],[40.7970,-74.4810],[40.5120,-74.8600],[40.3793,-74.9555],[40.3100,-75.1300],DEMO_PTS[DEMO_PTS.length-1]];
+const DEMO_NAME='Port Chester → Phoenixville (demo)';
+
+/* ================= state ================= */
+const FREQ={light:{gap:25,thresh:.5,sight:.75},medium:{gap:10,thresh:.25,sight:.45},heavy:{gap:3,thresh:.08,sight:0}};
+const DEF={freq:'medium',spd:'2',spoken:true,voice:'',rate:1,src:{curated:true,wiki:true,artists:true},clientId:'',from:'',to:''};
+let prefs=Object.assign({},DEF,LS.get('rr2-prefs',{}));prefs.src=Object.assign({},DEF.src,prefs.src||{});
+const savePrefs=()=>LS.set('rr2-prefs',prefs);
+let hist=LS.get('rr2-hist',null);if(!hist||typeof hist.heard!=='object'||!hist.heard)hist={drives:0,heard:{}};
+const saveHist=()=>LS.set('rr2-hist',hist);
+const E={phase:'idle',mode:'none',running:false,t:0,pos:DEMO_PTS[0],heading:null,speed:0,acc:null,along:0,ri:0,odo:0,route:null,dest:null,
+  story:null,pending:null,lastStoryEnd:-1e9,played:new Set(),passed:new Set(),missed:new Set(),inRange:new Set(),log:[],offN:0,lastReroute:0,lastFix:null,planOnFix:false,endTitle:''};
+const NET={wiki:'idle',wikiFails:0,gps:'off'};
+const pool=new Map();
+let routeSeq=0;
+const srcOn=s=>s.src==='wiki'?prefs.src.wiki:s.src==='artist'?(prefs.src.artists&&Sp.connected()):prefs.src.curated;
+const titleOf=s=>typeof s.title==='function'?s.title():s.title;
+function novelty(s){const h=hist.heard[s.id];if(!h)return 1;const d=hist.drives-h;return d<=0?0:Math.min(1,.12+d*.22)}
+
+/* ================= geometry on the route ================= */
+function makeRoute(pts,name,meta){const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+hav(pts[i-1],pts[i]));return Object.assign({id:++routeSeq,pts,cum,total:cum[cum.length-1],name},meta||{})}
+function pointAt(R,d){const n=R.pts.length;if(d<=0)return{p:R.pts[0],i:0,h:brg(R.pts[0],R.pts[1])};if(d>=R.total)return{p:R.pts[n-1],i:n-2,h:brg(R.pts[n-2],R.pts[n-1])};let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(R.cum[m]<=d)lo=m;else hi=m}const a=R.pts[lo],b=R.pts[hi],L=R.cum[hi]-R.cum[lo],t=L?(d-R.cum[lo])/L:0;return{p:[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],i:lo,h:brg(a,b)}}
+function project(R,p,i0,i1){const n=R.pts.length;i0=Math.max(0,Math.floor(i0||0));i1=(i1==null)?n-1:Math.min(n-1,Math.floor(i1));const kx=Math.cos(toR(p[0]))*111320,ky=110574;let best={off:Infinity,d:0,i:0};for(let i=i0;i<i1;i++){const a=R.pts[i],b=R.pts[i+1];const ax=(a[1]-p[1])*kx,ay=(a[0]-p[0])*ky,dx=(b[1]-a[1])*kx,dy=(b[0]-a[0])*ky;const L2=dx*dx+dy*dy;let t=L2?-(ax*dx+ay*dy)/L2:0;t=t<0?0:t>1?1:t;const off=Math.hypot(ax+t*dx,ay+t*dy);if(off<best.off)best={off,d:R.cum[i]+t*(R.cum[i+1]-R.cum[i]),i}}return best}
+function projOf(s){if(!E.route)return null;if(s._rid!==E.route.id){s._pr=project(E.route,s.p);s._rid=E.route.id}return s._pr}
+const demoRoute=()=>makeRoute(DEMO_PTS,DEMO_NAME,{demo:true,toName:'Phoenixville'});
+
+/* ================= network: routing, places, Wikipedia ================= */
+async function getJSON(url,opts,ms){const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),ms||12000);try{const r=await fetch(url,Object.assign({signal:ctl.signal},opts||{}));if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(tm)}}
+async function geocode(q){const j=await getJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});if(!j.length)throw new Error(`Couldn't find "${q}". Try adding the state.`);return{p:[+j[0].lat,+j[0].lon],name:j[0].name||j[0].display_name.split(',')[0]}}
+async function osrm(list){const c=list.map(p=>`${p[1].toFixed(6)},${p[0].toFixed(6)}`).join(';');const j=await getJSON(`https://router.project-osrm.org/route/v1/driving/${c}?overview=full&geometries=geojson`,null,15000);if(!j.routes||!j.routes.length)throw new Error('No driving route found.');const r=j.routes[0];return{pts:r.geometry.coordinates.map(x=>[x[1],x[0]]),dur:r.duration}}
+
+const WP='https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*';
+const BAD_TITLE=/(\bstation\b|\bhigh school\b|\bmiddle school\b|\belementary school\b|\bschool district\b|^list of\b|\broute \d|\binterstate \d|\bparkway\b|\bturnpike\b|\bexpressway\b|\bthruway\b|\bexit \d|\bairport\b|\bheliport\b|\bhospital\b|\bmedical center\b|\bshopping\b|\bmall\b|\bapartments\b|\bcountry club\b|\bgolf\b|\bpost office\b|\bfire department\b|\bymca\b|\boffice park\b)/i;
+const BAD_DESC=/^(village|town|city|borough|township|hamlet|census[- ]designated|unincorporated|neighbou?rhood|human settlement|county|municipality|suburb|section of|commuter rail|railway station|train station|bus station|light rail|rapid transit|school|high school|public (high )?school|private school|elementary|middle school|school district|road|highway|street|interstate|state route|u\.s\. route|shopping|hospital|airport|heliport|apartment|office|golf|country club|post office|radio station|television station|company|corporation|business|stadium|arena|ice rink)\b/i;
+const KW=/\b(revolution(ary)?|continental army|battle|skirmish|massacre|colonial|national register|national historic landmark|historic district|fossils?|dinosaurs?|glacia\w*|geolog\w*|invent\w*|oldest|largest|first|haunted|legend|murder|disaster|explosion|flood|ruins|furnace|iron ?works|canal|lighthouse|mansion|estate|museum|birthplace|recorded|concert|studio|filmed|tavern|fort)\b/gi;
+function classify(t){
+ if(/\b(music|musicians?|band|singers?|concerts?|recording studio|jazz|opera|orchestra|record label|songwriters?|music venue)\b/i.test(t))return'music';
+ if(/\b(revolution\w*|wars?|battles?|historic\w*|colonial|century|built|founded|national register|museum|house|mansion|fort|mill|church|cemetery|monument|memorial|estate|manor|tavern|inn|homestead|farmhouse)\b/i.test(t))return'history';
+ if(/\b(geolog\w*|fossils?|glacia\w*|rivers?|lakes?|mountains?|ridge|reservoir|swamp|marsh|wetlands?|watershed|bedrock|basalt|granite|quarry|mines?|species|preserve|observatory|creek|brook|falls|island|bay|forest)\b/i.test(t))return'science';
+ return'oddity';
+}
+function cleanExtract(t){t=t.replace(/\s+/g,' ').trim();let f=t.indexOf('. ');if(f<0)f=t.length;const head=t.slice(0,f).replace(/\s*\([^()]*\)/g,'').replace(/\s*\([^()]*\)/g,'');t=(head+t.slice(f)).replace(/\s+,/g,',').replace(/\s{2,}/g,' ');if(t.length>700){const c=t.lastIndexOf('. ',700);t=t.slice(0,c>200?c+1:700)}return t}
+function wikiStory(pg,geo){
+ if(!pg||pg.missing||!pg.extract||!geo)return null;const desc=pg.description||'';
+ if(BAD_TITLE.test(pg.title)||BAD_DESC.test(desc))return null;
+ const ex=cleanExtract(pg.extract);if(ex.length<160)return null;
+ let views=0;if(pg.pageviews)for(const k in pg.pageviews)views+=pg.pageviews[k]||0;
+ const pop=Math.min(1,Math.log10(1+views)/4.3);
+ const blob=desc+' '+ex;const hits=new Set((blob.match(KW)||[]).map(x=>x.toLowerCase())).size;
+ const score=Math.min(.86,.22+.45*pop+Math.min(3,hits)*.06+(ex.length>380?.04:0));
+ return{id:'wp:'+pg.pageid,src:'wiki',kind:'area',cat:classify(blob),p:geo,r:Math.round(4000+5000*pop),score,title:pg.title,extract:ex,url:'https://en.wikipedia.org/?curid='+pg.pageid};
+}
+const seenWp=new Set(),lookQ=[],looked=new Set();let lookBusy=false,lastLook=0;
+const cell=p=>Math.round(p[0]/.07)+':'+Math.round(p[1]/.09);
+function want(p,front){if(!prefs.src.wiki||NET.wiki==='down')return;const k=cell(p);if(looked.has(k))return;looked.add(k);front?lookQ.unshift(p):lookQ.push(p);pump()}
+async function pump(){
+ if(lookBusy)return;lookBusy=true;
+ while(lookQ.length&&NET.wiki!=='down'&&prefs.src.wiki){
+  const p=lookQ.shift();NET.wiki='loading';renderStatus();
+  try{await wpLookup(p);NET.wikiFails=0;NET.wiki='ok'}
+  catch(e){NET.wikiFails++;if(NET.wikiFails>=2){NET.wiki='down';lookQ.length=0;log('miss','wiki',framed?'Wikipedia is blocked inside this preview. The GitHub copy loads it.':"Couldn't reach Wikipedia. Using hand-written stories for now.")}}
+  renderStatus();await sleep(700);
+ }
+ lookBusy=false;if(NET.wiki==='loading')NET.wiki='ok';renderStatus();
+}
+async function wpLookup(p){
+ const g=await getJSON(`${WP}&list=geosearch&gsradius=10000&gslimit=80&gscoord=${encodeURIComponent(p[0].toFixed(5)+'|'+p[1].toFixed(5))}`);
+ const geo=new Map(),ids=[];
+ for(const x of (g.query&&g.query.geosearch)||[]){if(seenWp.has(x.pageid))continue;seenWp.add(x.pageid);if(BAD_TITLE.test(x.title))continue;geo.set(x.pageid,[x.lat,x.lon]);ids.push(x.pageid)}
+ for(let k=0;k<ids.length&&k<60;k+=20){
+  const b=ids.slice(k,k+20);
+  const d=await getJSON(`${WP}&prop=description|extracts|pageviews&exintro=1&explaintext=1&exsentences=4&exlimit=20&pvipdays=30&pageids=${encodeURIComponent(b.join('|'))}`);
+  for(const pg of (d.query&&d.query.pages)||[]){const s=wikiStory(pg,geo.get(pg.pageid));if(s)addStory(s)}
+  renderCounts();if(k+20<ids.length)await sleep(300);
+ }
+}
+function prefetchRoute(R){if(!R||!prefs.src.wiki)return;for(let d=0;d<=R.total;d+=11000)want(pointAt(R,d).p,false)}
+function lookAround(){
+ if(!prefs.src.wiki||NET.wiki==='down'||!E.pos)return;const now=performance.now();if(now-lastLook<2000)return;lastLook=now;
+ want(E.pos,true);
+ if(E.route&&E.offN<2){for(const k of [6000,14000])if(E.along+k<E.route.total)want(pointAt(E.route,E.along+k).p,true)}
+ else if(E.heading!=null)want(destPt(E.pos,E.heading,8000),true);
+}
+
+/* ================= Spotify ================= */
+const SP_SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing user-top-read';
+const redirectUri=()=>location.origin+location.pathname;
+const b64url=buf=>btoa(String.fromCharCode.apply(null,new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+let refreshing=null;
+const Sp={tok:LS.get('rr2-sptok',null),state:null,polledAt:0,busy:false,backoff:0,handled:null,fav:null,err:'',artistsLoaded:false,artistsLoading:false,
+ connected(){return !!(this.tok&&this.tok.access)},
+ async api(method,path,body){
+  if(!this.connected()||Date.now()<this.backoff)return null;
+  if(Date.now()>this.tok.exp){await spRefresh();if(!this.connected())return null}
+  const go=()=>fetch('https://api.spotify.com/v1'+path,{method,headers:Object.assign({Authorization:'Bearer '+this.tok.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});
+  let r=await go();
+  if(r.status===401){await spRefresh();if(!this.connected())return null;r=await go()}
+  if(r.status===429){this.backoff=Date.now()+(+r.headers.get('Retry-After')||30)*1000;return{status:429,ok:false,data:null}}
+  let data=null;if(r.status!==204&&r.status!==202){try{data=await r.json()}catch(e){}}
+  return{status:r.status,ok:r.ok,data};
+ },
+ async poll(){if(this.busy||!this.connected())return;this.busy=true;try{const r=await this.api('GET','/me/player');if(r&&r.status===200&&r.data){this.state=r.data;if(this.err==='No active Spotify device')this.err=''}else if(r&&r.status===204)this.state=null;this.polledAt=Date.now()}catch(e){}this.busy=false;renderStatus();renderNow()},
+ playing(){return !!(this.state&&this.state.is_playing&&this.state.item)},
+ remaining(){if(!this.playing())return null;const prog=this.state.progress_ms+(Date.now()-this.polledAt);return(this.state.item.duration_ms-prog)/1000},
+ trackName(){return this.state&&this.state.item?this.state.item.name:'The song'},
+ async cmd(method,path){let r=null;try{r=await this.api(method,path)}catch(e){}
+  if(r&&!r.ok&&r.status!==429){this.err=r.status===403?'Premium needed for playback':r.status===404?'No active Spotify device':'Spotify error '+r.status;log('miss','spotify',esc(this.err));renderStatus()}
+  if(r&&r.ok&&path==='/me/player/pause'&&this.state)this.state.is_playing=false;
+  setTimeout(()=>this.poll(),800);return r},
+ pause(){return this.cmd('PUT','/me/player/pause')},play(){return this.cmd('PUT','/me/player/play')},next(){return this.cmd('POST','/me/player/next')},
+ queue(uri){return this.cmd('POST','/me/player/queue?uri='+encodeURIComponent(uri))}
+};
+function saveTok(j){Sp.tok={access:j.access_token,refresh:j.refresh_token||(Sp.tok&&Sp.tok.refresh),exp:Date.now()+((j.expires_in||3600)-60)*1000};LS.set('rr2-sptok',Sp.tok)}
+function spRefresh(){
+ if(refreshing)return refreshing;
+ refreshing=(async()=>{try{
+  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:Sp.tok.refresh,client_id:prefs.clientId})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||'refresh');saveTok(j);
+ }catch(e){Sp.tok=null;LS.set('rr2-sptok',null);Sp.err='';spMsg('Spotify signed out. Connect again.');renderSp()}finally{refreshing=null}})();
+ return refreshing;
+}
+async function spConnect(){
+ const cid=$('spClient').value.trim();if(!cid){spMsg('Paste your Client ID first.');return}
+ if(!window.crypto||!crypto.subtle){spMsg('Spotify sign-in needs the https address of your GitHub Pages site.');return}
+ prefs.clientId=cid;savePrefs();
+ const ver=b64url(crypto.getRandomValues(new Uint8Array(48)));
+ const ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ver)));
+ const state=b64url(crypto.getRandomValues(new Uint8Array(12)));
+ LS.set('rr2-pkce',{ver,state});
+ location.href='https://accounts.spotify.com/authorize?'+new URLSearchParams({response_type:'code',client_id:cid,scope:SP_SCOPES,redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state});
+}
+async function spHandleRedirect(){
+ const q=new URLSearchParams(location.search);if(!q.has('code')&&!q.has('error'))return;
+ const pk=LS.get('rr2-pkce',null);history.replaceState(null,'',redirectUri()+location.hash);
+ if(q.get('error')){spMsg('Spotify said: '+q.get('error'));return}
+ if(!pk||pk.state!==q.get('state')){spMsg("That sign-in didn't match. Tap Connect again.");return}
+ try{const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),client_id:prefs.clientId,code_verifier:pk.ver})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.error||'token');saveTok(j);LS.set('rr2-pkce',null);spMsg('Connected.');
+ }catch(e){spMsg('Spotify sign-in failed: '+e.message)}
+}
+async function loadArtists(){
+ if(Sp.artistsLoading||Sp.artistsLoaded||!Sp.connected()||!prefs.src.artists)return;Sp.artistsLoading=true;renderStatus();
+ try{
+  const names=new Map();
+  for(const tr of ['long_term','medium_term','short_term']){const r=await Sp.api('GET',`/me/top/artists?limit=50&time_range=${tr}`);if(r&&r.data&&r.data.items)r.data.items.forEach(a=>{if(!names.has(a.id))names.set(a.id,a.name)})}
+  const fav=new Map();
+  for(const tr of ['long_term','medium_term']){const r=await Sp.api('GET',`/me/top/tracks?limit=50&time_range=${tr}`);if(r&&r.data&&r.data.items)r.data.items.forEach(t=>(t.artists||[]).forEach(a=>{if(!fav.has(a.id))fav.set(a.id,{uri:t.uri,name:t.name})}))}
+  Sp.fav=fav;
+  const ids=[...names.keys()],rank=new Map(ids.map((id,i)=>[id,i])),groups=new Map();
+  for(let k=0;k<ids.length;k+=40){
+   const vals=ids.slice(k,k+40).map(i=>`"${i}"`).join(' ');
+   const q=`SELECT ?sid ?placeLabel ?coord ?how WHERE { VALUES ?sid { ${vals} } ?artist wdt:P1902 ?sid . { ?artist wdt:P740 ?place . BIND("formed" AS ?how) } UNION { ?artist wdt:P19 ?place . BIND("born" AS ?how) } ?place wdt:P625 ?coord . SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }`;
+   const j=await getJSON('https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(q),null,20000);
+   for(const b of j.results.bindings){
+    const m=/Point\(([-\d.eE]+) ([-\d.eE]+)\)/.exec(b.coord.value);if(!m)continue;
+    const place=b.placeLabel.value,p=[+m[2],+m[1]],key=place+'|'+p[0].toFixed(1)+'|'+p[1].toFixed(1);
+    if(!groups.has(key))groups.set(key,{place,p,artists:[]});
+    const g=groups.get(key),sid=b.sid.value;if(!g.artists.some(a=>a.id===sid))g.artists.push({id:sid,name:names.get(sid)||'An artist',how:b.how.value});
+   }
+  }
+  let n=0;for(const g of groups.values()){g.artists.sort((a,b)=>rank.get(a.id)-rank.get(b.id));addStory(artistStory(g));n++}
+  Sp.artistsLoaded=true;log('song','spotify',`Found ${n} hometown${n===1?'':'s'} for ${names.size} of your top artists`);
+ }catch(e){log('miss','spotify',"Couldn't load your artists' hometowns.")}
+ Sp.artistsLoading=false;renderStatus();renderCounts();renderStrip();
+}
+function artistStory(g){
+ const lead=g.artists[0],slug=g.place.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+ return{id:'sp:'+slug,src:'artist',kind:'area',cat:'music',p:g.p,r:12000,score:Math.min(.92,.78+.03*g.artists.length),song:{artistId:lead.id,a:lead.name},
+  title:()=>g.artists.length===1?`${lead.name}, ${lead.how==='formed'?'formed':'born'} in ${g.place}`:`${g.artists.length} of your artists come from ${g.place}`,
+  text:()=>{const w=where(g.p);if(g.artists.length===1)return `${lead.name} ${lead.how==='formed'?'got started':'was born'} in ${g.place}, ${w}.`;
+   const nm=g.artists.slice(0,4).map(a=>a.name);const list=nm.length>2?nm.slice(0,-1).join(', ')+', and '+nm[nm.length-1]:nm.join(' and ');
+   return `${list}${g.artists.length>4?`, plus ${g.artists.length-4} more,`:''} all trace back to ${g.place}, ${w}.`}};
+}
+async function resolveSong(s){
+ if(!s.song)return null;if(s.song.uri)return s.song.uri;
+ if(s.song.artistId){const f=Sp.fav&&Sp.fav.get(s.song.artistId);if(f){s.song.t=f.name;return s.song.uri=f.uri}
+  const r=await Sp.api('GET',`/search?type=track&limit=10&q=${encodeURIComponent('artist:"'+s.song.a+'"')}`);
+  const it=r&&r.data&&r.data.tracks&&r.data.tracks.items.find(t=>t.artists.some(a=>a.id===s.song.artistId));if(it){s.song.t=it.name;return s.song.uri=it.uri}return null}
+ const r=await Sp.api('GET',`/search?type=track&limit=5&q=${encodeURIComponent(`track:"${s.song.t}" artist:"${s.song.a}"`)}`);
+ const it=r&&r.data&&r.data.tracks&&r.data.tracks.items[0];return it?(s.song.uri=it.uri):null;
+}
+
+/* ================= voice ================= */
+function voiceScore(v){const n=v.name;let s=0;if(/premium/i.test(n))s+=6;if(/enhanced/i.test(n))s+=5;if(/natural|neural/i.test(n))s+=5;if(/siri/i.test(n))s+=3;if(/^Google US English/.test(n))s+=3;
+ if(/^(Samantha|Ava|Allison|Evan|Nathan|Zoe|Joelle|Noelle|Tom|Susan|Serena|Daniel|Karen|Moira|Tessa)\b/.test(n))s+=2;if(/en[-_]US/i.test(v.lang))s+=1;
+ if(/(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Rocko|Grandma|Grandpa|Eddy|Flo|Reed|Sandy|Shelley)/.test(n))s-=10;return s}
+function chunk(t){const parts=t.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g)||[t];const out=[];let cur='';for(const p of parts){if((cur+p).length>220&&cur){out.push(cur.trim());cur=p}else cur+=p}if(cur.trim())out.push(cur.trim());return out}
+const Voice={ok:'speechSynthesis' in window,list:[],v:null,speaking:false,gen:0,
+ init(){if(!this.ok){fillVoices();return}const load=()=>{this.list=speechSynthesis.getVoices().filter(v=>/^en([-_]|$)/i.test(v.lang));this.v=this.list.find(v=>v.name===prefs.voice)||this.best();fillVoices()};load();
+  if(speechSynthesis.addEventListener)speechSynthesis.addEventListener('voiceschanged',load);else speechSynthesis.onvoiceschanged=load},
+ best(){let b=null,bs=-1e9;for(const v of this.list){const s=voiceScore(v);if(s>bs){bs=s;b=v}}return b},
+ speak(text,done,fail){
+  if(!this.ok){fail&&fail();return}const g=++this.gen;try{if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel()}catch(e){}this.speaking=true;const parts=chunk(text);let i=0;
+  const next=()=>{if(g!==this.gen)return;if(i>=parts.length){this.speaking=false;done&&done();return}
+   const u=new SpeechSynthesisUtterance(parts[i++]);if(this.v){u.voice=this.v;u.lang=this.v.lang}u.rate=prefs.rate||1;u.onend=next;
+   u.onerror=e=>{if(g!==this.gen)return;if(e.error==='interrupted'||e.error==='canceled'){next();return}this.gen++;this.speaking=false;fail&&fail()};
+   try{speechSynthesis.speak(u)}catch(e){this.gen++;this.speaking=false;fail&&fail()}};
+  let busy=false;try{busy=speechSynthesis.speaking||speechSynthesis.pending}catch(e){}
+  if(busy)setTimeout(next,80);else next();
+ },
+ stop(){this.gen++;this.speaking=false;try{speechSynthesis.cancel()}catch(e){}}
+};
+function fillVoices(){const sel=$('voiceSel');if(!Voice.ok){sel.innerHTML='<option>Speech is not supported in this browser</option>';sel.disabled=true;return}
+ const list=Voice.list.slice().sort((a,b)=>voiceScore(b)-voiceScore(a));
+ sel.innerHTML=list.length?list.map(v=>`<option value="${esc(v.name)}"${Voice.v&&v.name===Voice.v.name?' selected':''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join(''):'<option>System default voice</option>'}
+
+/* ================= sample library for simulation ================= */
+let nowKey='';
+const Sim={order:[],i:0,cur:null,held:null,
+ reset(){this.order=shuffle(Object.keys(TRACKS).filter(k=>!TRACKS[k][3]));this.i=0;this.cur=null;this.held=null},
+ next(){if(!this.order.length)this.reset();this.play(this.order[this.i++%this.order.length],0)},
+ play(k,el,pre){const t=TRACKS[k];this.cur={k,el:el||0,dur:t[2]*60};this.n=(this.n||0)+1;log('song','♪',`${pre||''}${esc(t[0])} <span class="m">${esc(t[1])}</span>`)},
+ hold(){if(this.cur){this.held=this.cur;this.cur=null}},
+ resume(){if(this.held){const h=this.held;this.held=null;this.play(h.k,h.el,'↺ ')}else this.next()}
+};
+
+/* ================= the scheduler ================= */
+const useSp=()=>Sp.connected()&&(E.mode==='gps'||(E.mode==='sim'&&prefs.spd==='real'));
+const useSim=()=>E.mode==='sim'&&!useSp();
+const due=()=>E.t-E.lastStoryEnd>=FREQ[prefs.freq].gap*60;
+function where(p){if(!E.pos)return'nearby';const mi=hav(E.pos,p)/MI;if(mi<.35)return'right around here';
+ const n=Math.round(mi),amt=mi<1?'less than a mile':`about ${n} mile${n===1?'':'s'}`;
+ if(E.heading==null||E.speed<2)return amt+' from here';const a=rel(brg(E.pos,p),E.heading);
+ if(Math.abs(a)<=35)return amt+' ahead';if(Math.abs(a)>=145)return amt+' behind you';return `${amt} off to your ${a>0?'right':'left'}`}
+function shortWhere(p){if(!E.pos)return'';const mi=hav(E.pos,p)/MI;if(mi<.35)return'here';let s=mi.toFixed(1)+' mi';
+ if(E.heading!=null&&E.speed>=2){const a=rel(brg(E.pos,p),E.heading);s+=Math.abs(a)<=35?' ahead':Math.abs(a)>=145?' behind':a>0?' right':' left'}return s}
+function side(look){if(!E.pos||E.heading==null||E.phase==='idle')return'out the window';const a=rel(brg(E.pos,look),E.heading);return Math.abs(a)<=25?'ahead':a>0?'right':'left'}
+function narrate(s){const title=titleOf(s),text=typeof s.text==='function'?s.text():s.text;
+ if(s.src==='wiki'){const lead=cap(where(s.p));return{title,lead,text:s.extract,speak:`${lead}: ${title}. ${s.extract}`}}
+ if(s.src==='artist')return{title,lead:'',text,speak:text};
+ return{title,lead:s.kind==='area'?cap(where(s.p)):'',text,speak:`${title}. ${text}`}}
+const estSec=n=>(n.speak.split(/\s+/).length/2.6+1.5)/(prefs.rate||1);
+function songLabel(st){const s=st.s;if(!s.song)return'';const t=s.song.t;return t?`${t} · ${s.song.a}`:`Something by ${s.song.a}`}
+function aheadF(s){if(E.heading==null||E.speed<2)return 1;const d=hav(E.pos,s.p);if(d<1000)return 1.05;const a=Math.abs(rel(brg(E.pos,s.p),E.heading));return a<=60?1.1:a<=110?1:.55}
+function pick(){const f=FREQ[prefs.freq];let best=null,bw=0,n=0;
+ for(const s of pool.values()){if(s.kind!=='area'||E.played.has(s.id)||!srcOn(s))continue;if(hav(E.pos,s.p)>s.r)continue;n++;
+  const w=s.score*novelty(s)*aheadF(s)*(.75+Math.random()*.5);if(w>=f.thresh&&w>bw){best=s;bw=w}}
+ return best?{s:best,n}:null}
+const pickedHow=c=>c.n>1?`picked from ${c.n} in range`:'';
+
+function playStory(s,how,o){o=o||{};
+ const n=narrate(s);
+ E.story={s,n,how,startT:E.t,real:performance.now(),est:estSec(n),interrupted:!!o.interrupted,boundary:!!o.boundary,speaking:false};
+ const st=E.story;
+ E.played.add(s.id);hist.heard[s.id]=hist.drives;saveHist();styleStoryPin(s);
+ log('story',s.kind==='sight'?'in view':CAT[s.cat].toLowerCase(),`<b>${esc(n.title)}</b>${how?` <span class="m">${esc(how)}</span>`:''}`);
+ if(map&&zone){zone.setLatLng(s.p);zone.setRadius(s.r);zone.addTo(map);const el=zone.getElement&&zone.getElement();if(el)el.setAttribute('class','zone c-'+s.cat)}
+ if(s.song&&useSp())resolveSong(s).then(uri=>{if(uri&&!st.interrupted&&E.story===st){Sp.queue(uri);st.queued=true}renderNow()}).catch(()=>{});
+ if(prefs.spoken&&Voice.ok){st.speaking=true;Voice.speak(n.speak,()=>{if(E.story===st)storyDone()},()=>{if(E.story===st){st.speaking=false;st.startT=E.t;st.real=performance.now();log('miss','voice','Speech failed, so this story is shown as text. Tap Test voice once to let the browser talk.')}})}
+ nowKey='';renderNow();renderStrip();renderDash();
+}
+function storyDone(){
+ const st=E.story;if(!st)return;E.story=null;E.lastStoryEnd=E.t;if(zone&&map)zone.remove();
+ const s=st.s;
+ if(useSp()){if(st.interrupted||st.boundary)(async()=>{if(st.boundary&&!st.interrupted){await Sp.next();await sleep(1200);await Sp.poll();if(!Sp.playing())await Sp.play()}else await Sp.play()})()}
+ else if(useSim()){if(st.interrupted)Sim.resume();else if(s.song&&s.song.key&&TRACKS[s.song.key])Sim.play(s.song.key,0,'→ ');else Sim.next()}
+ nowKey='';renderNow();renderStrip();renderDash();
+}
+function interruptFor(s,how){
+ const carry=E.story;
+ if(carry){Voice.stop();E.story=null;playStory(s,how,{interrupted:carry.interrupted,boundary:carry.boundary});return}
+ if(useSp()&&Sp.playing()){log('fade','pause',`${esc(Sp.trackName())} paused`);Sp.pause();playStory(s,how,{interrupted:true});return}
+ if(useSim()&&Sim.cur){log('fade','fade',`${esc(TRACKS[Sim.cur.k][0])} fades out`);Sim.hold();playStory(s,how,{interrupted:true});return}
+ playStory(s,how,{interrupted:useSim()&&!!Sim.held});
+}
+function simBoundary(){if(due()){const c=pick();if(c){playStory(c.s,pickedHow(c),{boundary:true});return}}Sim.next()}
+function scan(){
+ const f=FREQ[prefs.freq];
+ for(const s of pool.values()){
+  if(!srcOn(s))continue;
+  if(s.kind==='sight'){
+   if(E.played.has(s.id)||E.missed.has(s.id))continue;if(!s.pts.some(p=>hav(E.pos,p)<=s.r))continue;
+   const gapOK=E.t-E.lastStoryEnd>=f.gap*60*.35,scoreOK=s.score*novelty(s)>=f.sight;
+   if(!E.story&&!E.pending&&gapOK&&scoreOK){interruptFor(s,'came into view')}
+   else{E.missed.add(s.id);E.passed.add(s.id);styleStoryPin(s);log('miss','missed',`${esc(titleOf(s))} <span class="m">${E.story?'another story was playing':!scoreOK?(novelty(s)<1?'heard on a recent drive':'skipped on Light'):'too soon after the last story'}</span>`)}
+   continue;
+  }
+  const inR=hav(E.pos,s.p)<=s.r;
+  if(inR)E.inRange.add(s.id);else if(E.inRange.has(s.id)){E.inRange.delete(s.id);if(!E.played.has(s.id)){E.passed.add(s.id);styleStoryPin(s)}}
+ }
+}
+function spTick(){
+ const rem=Sp.remaining(),every=(rem!=null&&rem<25)?3000:10000;if(!Sp.busy&&Date.now()-Sp.polledAt>every)Sp.poll();
+ if(E.story||E.pending)return;
+ if(rem==null){if(due()){const c=pick();if(c)playStory(c.s,pickedHow(c))}return}
+ const id=Sp.state.item.id;
+ if(rem<=8&&Sp.handled!==id){Sp.handled=id;
+  if(due()){const c=pick();if(c){E.pending=c;setTimeout(async()=>{const p=E.pending;E.pending=null;if(!E.running||E.story||!p)return;await Sp.pause();playStory(p.s,pickedHow(p),{boundary:true})},Math.max(0,(rem-1.2)*1000))}}}
+}
+function tick(dt){
+ if(!E.running)return;
+ const st0=E.story,talking=!!(st0&&(st0.speaking||(E.mode==='sim'&&E.t-st0.startT>=st0.est)));
+ if(E.mode==='sim'){if(!talking){E.t+=dt;E.along=Math.min(E.route.total,E.along+SIM_MPS*dt);const q=pointAt(E.route,E.along);E.pos=q.p;E.heading=q.h;E.speed=SIM_MPS;E.ri=q.i}}
+ else E.t+=dt;
+ if(!E.pos)return;
+ if(E.story){const st=E.story;
+  if(!st.speaking&&E.t-st.startT>=st.est&&performance.now()-st.real>=Math.min(st.est,6)*1000)storyDone();
+  else if(st.speaking&&performance.now()-st.real>(st.est*2.2+10)*1000){Voice.stop();storyDone()}}
+ scan();
+ if(useSp())spTick();
+ else if(useSim()){if(!E.story){if(Sim.cur){Sim.cur.el+=dt;if(Sim.cur.el>=Sim.cur.dur){Sim.cur=null;simBoundary()}}else if(!Sim.held)Sim.next()}}
+ else if(!E.story&&due()){const c=pick();if(c)playStory(c.s,pickedHow(c))}
+ lookAround();
+ if(E.mode==='sim'&&E.along>=E.route.total-5)arrive(false);
+ if(E.mode==='gps'&&E.route&&E.dest&&E.route.total-E.along<150&&E.offN===0&&E.t>60)arrive(false);
+}
+
+/* ================= GPS ================= */
+let watchId=null,gpsTimer=0,lastGpsTick=0,wakeLock=null,wakeState='off';
+function startGps(){if(!navigator.geolocation){NET.gps='blocked';log('miss','gps','This browser has no location access.');renderStatus();return}
+ NET.gps='searching';watchId=navigator.geolocation.watchPosition(onFix,onGeoErr,{enableHighAccuracy:true,maximumAge:1000,timeout:30000})}
+function onGeoErr(e){if(e.code===1){NET.gps='blocked';log('miss','gps',framed?'GPS is blocked inside this preview. Open the GitHub copy on your phone, or use Simulate.':'Location is blocked. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App.')}else NET.gps='weak';renderStatus()}
+function onFix(pos){
+ const c=pos.coords;E.acc=c.accuracy;NET.gps='ok';if(c.accuracy>250){renderStatus();return}
+ const p=[c.latitude,c.longitude],gpsHead=(c.heading!=null&&!isNaN(c.heading)&&c.speed!=null&&c.speed>1.5)?c.heading:null;
+ if(E.lastFix){const d=hav(E.lastFix,p);if(d>20){E.odo+=d;if(gpsHead==null)E.heading=brg(E.lastFix,p);E.lastFix=p}}else E.lastFix=p;
+ if(gpsHead!=null)E.heading=gpsHead;
+ if(c.speed!=null&&!isNaN(c.speed)&&c.speed>=0)E.speed=c.speed;
+ const first=!E.pos||E.phase!=='running'||!E.hadFix;E.hadFix=true;E.pos=p;
+ if(E.planOnFix){E.planOnFix=false;planRoute()}
+ if(E.route)followRoute();
+ if(first&&map)map.setView(p,13);
+ moveCar(performance.now(),true);renderStatus();
+}
+function followRoute(){
+ const R=E.route;let pr=project(R,E.pos,E.ri-60,E.ri+600);if(pr.off>300)pr=project(R,E.pos);E.along=pr.d;E.ri=pr.i;
+ if(pr.off>350){if(++E.offN>=4&&Date.now()-E.lastReroute>45000&&E.dest)reroute()}else E.offN=0;
+}
+async function reroute(){
+ E.lastReroute=Date.now();log('miss','route','Left the planned route. Getting a new one.');
+ try{const r=await osrm([E.pos,E.dest.p]);setRoute(makeRoute(r.pts,E.route.name,{toName:E.dest.name,dur:r.dur}),false);E.offN=0;E.ri=0;followRoute();prefetchRoute(E.route);log('song','route',`New route · ${(E.route.total/MI).toFixed(0)} mi to go`)}
+ catch(e){log('miss','route',"Couldn't get a new route. Stories still follow your position.")}
+}
+function gpsLoop(){const now=performance.now(),dt=(now-lastGpsTick)/1000;lastGpsTick=now;tick(dt);renderFrame()}
+async function wake(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeState='on';wakeLock.addEventListener('release',()=>{wakeState='off';renderStatus()})}else wakeState='na'}catch(e){wakeState='na'}renderStatus()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&E.running&&E.mode==='gps')wake()});
+
+/* ================= drive lifecycle ================= */
+let rafId=0,lastFrame=0,acc=0,starting=false;
+function simLoop(ts){if(!E.running||E.mode!=='sim')return;const dt=Math.min(.25,(ts-lastFrame)/1000);lastFrame=ts;acc+=dt;
+ if(acc>=.1){const step=prefs.spd==='real'?acc:acc*(+prefs.spd)*60;acc=0;tick(step)}renderFrame();if(E.running)rafId=requestAnimationFrame(simLoop)}
+async function upgradeDemo(){if(!E.route||!E.route.demo||E.route.real)return;planMsg('Loading the demo route…');
+ try{const r=await osrm(DEMO_VIA);setRoute(makeRoute(r.pts,DEMO_NAME,{demo:true,real:true,toName:'Phoenixville',dur:r.dur}),true);planMsg('Demo route: Port Chester to Phoenixville on I-287 and US-202.')}
+ catch(e){planMsg(framed?'Using a simplified demo route. Real road routing works on the GitHub copy.':'Using a simplified demo route.')}}
+async function startDrive(mode){
+ if(starting||E.running)return;starting=true;
+ if(prefs.spoken&&Voice.ok)Voice.speak(mode==='gps'?'Roadside Radio is on.':'Starting the simulated drive.');
+ if(NET.wiki==='down'){NET.wiki='idle';NET.wikiFails=0}
+ if(mode==='sim'){if(!E.route)setRoute(demoRoute(),true);await upgradeDemo()}
+ hist.drives++;saveHist();
+ Object.assign(E,{mode,phase:'running',running:true,t:0,story:null,pending:null,lastStoryEnd:-1e9,played:new Set(),passed:new Set(),missed:new Set(),inRange:new Set(),log:[],offN:0,odo:0,along:0,ri:0,lastFix:null,hadFix:false,heading:null,speed:0,acc:null,endTitle:''});
+ for(const s of pool.values())styleStoryPin(s);
+ $('setup').open=false;follow=true;$('recenter').hidden=true;
+ log('song','start',mode==='gps'?'Drive started with GPS':'Simulated drive started');
+ if(mode==='sim'){
+  E.pos=E.route.pts[0];E.heading=brg(E.route.pts[0],E.route.pts[1]);Sim.reset();if(useSim())Sim.next();
+  prefetchRoute(E.route);if(map)map.setView(E.pos,12);lastFrame=performance.now();acc=0;rafId=requestAnimationFrame(simLoop);
+ }else{
+  if(E.route&&E.route.demo){setRoute(null);E.dest=null}
+  E.pos=null;if($('to').value.trim()&&!E.dest)E.planOnFix=true;
+  startGps();lastGpsTick=performance.now();gpsTimer=setInterval(gpsLoop,1000);wake();if(E.route)prefetchRoute(E.route);
+ }
+ if(Sp.connected()){Sp.poll();loadArtists()}
+ starting=false;nowKey='';renderAll();
+}
+function arrive(manual){
+ if(E.phase!=='running'&&E.phase!=='paused')return;
+ E.endTitle=manual?'Drive ended':`Arrived${E.route&&E.route.toName?' in '+E.route.toName:''}`;
+ const passed=[...E.passed].filter(id=>!E.played.has(id)).length;
+ log('story',manual?'end':'arrived',`<b>${esc(E.endTitle)}.</b> ${E.played.size} played, ${passed} passed by.`);
+ stopDrive();
+}
+function stopDrive(){
+ E.running=false;E.phase='ended';cancelAnimationFrame(rafId);clearInterval(gpsTimer);
+ if(watchId!=null){try{navigator.geolocation.clearWatch(watchId)}catch(e){}watchId=null}
+ if(wakeLock){try{wakeLock.release()}catch(e){}wakeLock=null}wakeState='off';
+ const st=E.story;if(st){Voice.stop();E.story=null;if(useSp()&&(st.interrupted||st.boundary))Sp.play()}
+ E.pending=null;if(zone&&map)zone.remove();nowKey='';renderAll();
+}
+function togglePause(){
+ if(E.phase==='running'){E.phase='paused';E.running=false;cancelAnimationFrame(rafId);clearInterval(gpsTimer);
+  if(E.story&&E.story.speaking){Voice.stop();E.story.speaking=false;E.story.resume=true}log('song','pause','Paused')}
+ else if(E.phase==='paused'){E.phase='running';E.running=true;
+  const st=E.story;if(st&&st.resume&&prefs.spoken){st.resume=false;st.speaking=true;st.real=performance.now();Voice.speak(st.n.speak,()=>{if(E.story===st)storyDone()},()=>{if(E.story===st){st.speaking=false;st.startT=E.t}})}
+  if(E.mode==='sim'){lastFrame=performance.now();acc=0;rafId=requestAnimationFrame(simLoop)}else{lastGpsTick=performance.now();gpsTimer=setInterval(gpsLoop,1000)}}
+ nowKey='';renderControls();renderNow();
+}
+function skip(){
+ if(E.phase!=='running'&&E.phase!=='paused')return;
+ if(E.story){Voice.stop();log('pass','skip',`Skipped ${esc(E.story.n.title)}`);storyDone();return}
+ if(useSim()&&Sim.cur){Sim.cur=null;simBoundary();nowKey='';renderNow();return}
+ if(useSp()&&Sp.playing())Sp.next();
+}
+
+/* ================= routes ================= */
+function currentPos(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej(new Error('No location on this device. Type a starting point.'));
+ navigator.geolocation.getCurrentPosition(p=>res([p.coords.latitude,p.coords.longitude]),()=>rej(new Error("Couldn't get your location. Type a starting point in From.")),{enableHighAccuracy:true,timeout:12000,maximumAge:60000})})}
+async function planRoute(){
+ const to=$('to').value.trim(),from=$('from').value.trim();prefs.to=to;prefs.from=from;savePrefs();
+ if(!to){E.dest=null;if(E.mode==='gps'&&E.phase==='running'){setRoute(null);planMsg('Free roam. Stories follow your GPS.')}else{setRoute(demoRoute(),true);planMsg('No destination, so Simulate uses the demo route and GPS drives free-roam.')}return null}
+ $('plan').disabled=true;planMsg(`Finding ${to}…`);
+ try{
+  const d=await geocode(to);let o;
+  if(from)o=await geocode(from);else o={p:(E.mode==='gps'&&E.phase==='running'&&E.pos)?E.pos:await currentPos(),name:'Your location'};
+  planMsg('Routing…');const r=await osrm([o.p,d.p]);E.dest=d;
+  const R=makeRoute(r.pts,`${o.name} → ${d.name}`,{toName:d.name,dur:r.dur});setRoute(R,E.phase!=='running');
+  planMsg(`${(R.total/MI).toFixed(0)} mi, about ${fmtDur(r.dur)} without traffic. Loading stories along it.`);prefetchRoute(R);return R;
+ }catch(e){planMsg(framed?'Routing is blocked inside this preview. The GitHub copy can plan routes.':(e.name==='AbortError'?'The routing service timed out. Try again.':e.message));return null}
+ finally{$('plan').disabled=E.mode==='sim'&&E.running}
+}
+function setRoute(R,fit){
+ E.route=R;E.ri=0;
+ if(map){const ll=R?R.pts:[];routeCase.setLatLngs(ll);routeLine.setLatLngs(ll);doneLine.setLatLngs([]);if(R&&fit)map.fitBounds(routeLine.getBounds(),{padding:[24,24]})}
+ $('routeName').textContent=R?`${R.name} · ${(R.total/MI).toFixed(0)} mi`:'Free roam · stories follow your GPS';
+ $('setupSum').textContent=R?R.name:'Free roam';renderStrip();
+}
+
+/* ================= map ================= */
+let map=null,tiles=null,routeCase,routeLine,doneLine,carMk,zone,follow=true,lastPan=0,lastDone=0,tileWarned=false;
+const isDark=()=>{const t=document.documentElement.getAttribute('data-theme');if(t)return t==='dark';return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches};
+function setTiles(){if(!map)return;const url=`https://{s}.basemaps.cartocdn.com/${isDark()?'dark_all':'light_all'}/{z}/{x}/{y}{r}.png`;
+ if(tiles){tiles.setUrl(url);return}
+ tiles=L.tileLayer(url,{subdomains:'abcd',maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
+ tiles.on('tileerror',()=>{if(tileWarned)return;tileWarned=true;const n=$('mapNote');n.hidden=false;n.textContent=framed?'Map tiles are blocked in this preview. The route and story pins still work.':"Map tiles didn't load. The route and pins still work."})}
+function initMap(){
+ if(!window.L){const n=$('mapNote');n.hidden=false;n.textContent="The map library didn't load. Stories still work.";return}
+ map=L.map('map',{zoomControl:true,attributionControl:true}).setView(DEMO_PTS[0],10);setTiles();
+ routeCase=L.polyline([],{className:'rt-case',interactive:false}).addTo(map);
+ routeLine=L.polyline([],{className:'rt-line',interactive:false}).addTo(map);
+ doneLine=L.polyline([],{className:'rt-done',interactive:false}).addTo(map);
+ zone=L.circle(DEMO_PTS[0],{radius:1000,className:'zone',interactive:false});
+ carMk=L.marker(DEMO_PTS[0],{icon:L.divIcon({className:'car',html:'<div class="car-a"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 19 20l-7-3.6L5 20z"/></svg></div>',iconSize:[30,30],iconAnchor:[15,15]}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
+ map.on('dragstart',()=>{if(E.phase==='running'||E.phase==='paused'){follow=false;$('recenter').hidden=false}});
+ if(window.matchMedia){const mq=matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',setTiles)}
+ new MutationObserver(setTiles).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+}
+function addStory(s){if(pool.has(s.id))return;pool.set(s.id,s);addPin(s)}
+function addPin(s){
+ if(!map)return;
+ if(s.kind==='sight')s._mk=L.marker(s.p,{icon:L.divIcon({className:'dpin c-'+s.cat,html:'<i></i>',iconSize:[16,16],iconAnchor:[8,8]}),keyboard:false,riseOnHover:true});
+ else s._mk=L.circleMarker(s.p,{radius:s.src==='wiki'?4.5:6.5,className:'pin c-'+s.cat+(s.src==='wiki'?' wiki':'')});
+ s._mk.bindPopup(()=>popupHtml(s),{maxWidth:260});s._mk.addTo(map);styleStoryPin(s);
+}
+function styleStoryPin(s){const m=s._mk;const el=m&&(m._path||m._icon);if(!el)return;const played=E.played.has(s.id);
+ el.classList.toggle('played',played);el.classList.toggle('passed',E.passed.has(s.id)&&!played);
+ el.classList.toggle('old',!!hist.heard[s.id]&&hist.heard[s.id]<hist.drives&&!played);el.classList.toggle('off',!srcOn(s))}
+function popupHtml(s){
+ const st=E.played.has(s.id)?'Played this drive':E.passed.has(s.id)?'Passed by this drive':hist.heard[s.id]?'Heard on an earlier drive':'Not heard yet';
+ const reach=s.kind==='sight'?'plays when in view':`plays within ${(s.r/MI).toFixed(1)} mi`;
+ return `<div class="pop c-${s.cat}"><div class="pop-k">${CAT[s.cat]} · ${SRC[s.src]} · ${reach}</div><div class="pop-t">${esc(titleOf(s))}</div><div class="pop-s">${st}</div><div class="pop-b">${E.phase==='running'?`<button data-play="${esc(s.id)}">Play now</button>`:''}${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">Wikipedia</a>`:''}</div></div>`;
+}
+function moveCar(now,force){
+ if(!map||!E.pos)return;carMk.setLatLng(E.pos);const a=carMk.getElement&&carMk.getElement();
+ if(a){const c=a.querySelector('.car-a');if(c)c.style.transform=`rotate(${E.heading||0}deg)`}
+ if(follow&&(E.phase==='running')&&(force||now-lastPan>250)){lastPan=now;map.panTo(E.pos,{animate:false})}
+ if(E.route&&(force||now-lastDone>600)){lastDone=now;doneLine.setLatLngs(E.route.pts.slice(0,E.ri+1).concat([E.pos]))}
+}
+
+/* ================= rendering ================= */
+function pill(id,cls,text){const el=$(id);el.className='pill'+(cls?' '+cls:'');el.lastElementChild.textContent=text}
+function countSrc(src){let n=0;for(const s of pool.values())if(s.src===src)n++;return n}
+function renderCounts(){let n=0;for(const s of pool.values())if(srcOn(s))n++;pill('pCount','',`${n} stories loaded`)}
+function renderStatus(){
+ if(E.mode==='sim'&&E.phase!=='idle')pill('pGps','','Simulated position');
+ else if(NET.gps==='blocked')pill('pGps','bad','GPS blocked');
+ else if(E.mode==='gps'&&E.phase==='running'&&E.acc!=null)pill('pGps',E.acc<=50?'good':'warn',`GPS ±${Math.round(E.acc)} m`);
+ else if(E.mode==='gps'&&E.phase==='running')pill('pGps','warn','GPS searching');
+ else pill('pGps','','GPS off');
+ const wn=countSrc('wiki');
+ if(!prefs.src.wiki)pill('pWiki','','Wikipedia off');else if(NET.wiki==='down')pill('pWiki','warn','Wikipedia unavailable');
+ else if(NET.wiki==='loading'||lookQ.length)pill('pWiki','good',`Wikipedia ${wn} · loading`);else pill('pWiki',wn?'good':'',wn?`Wikipedia ${wn}`:'Wikipedia ready');
+ if(!Sp.connected())pill('pSp','','Spotify off');else if(Sp.err)pill('pSp','warn',Sp.err);else if(Sp.artistsLoading)pill('pSp','good','Spotify · reading your artists');
+ else if(Sp.playing())pill('pSp','good','Spotify playing');else pill('pSp','good','Spotify connected');
+ const sc=$('pScreen');if(E.mode==='gps'&&E.phase==='running'){sc.hidden=false;pill('pScreen',wakeState==='on'?'good':'warn',wakeState==='on'?'Screen stays on':'Keep the screen on')}else sc.hidden=true;
+ renderCounts();
+}
+function renderControls(){
+ const idle=E.phase==='idle'||E.phase==='ended';$('idleBtns').hidden=!idle;$('runBtns').hidden=idle;
+ $('pause').textContent=E.phase==='paused'?'Resume':'Pause';
+ $('goGps').textContent=E.phase==='ended'?'Drive again with GPS':'Drive with GPS';$('goSim').textContent=E.phase==='ended'?'Simulate again':'Simulate';
+ $('plan').disabled=E.mode==='sim'&&!idle;$('demo').disabled=!idle;
+}
+function renderDash(){
+ const miles=(E.route&&E.phase!=='idle'&&!(E.mode==='gps'&&!E.dest))?E.along/MI:E.odo/MI;
+ $('dMile').textContent=Math.floor(Math.max(0,miles));$('dTime').textContent=clock(E.t);$('dPlayed').textContent=E.played.size;
+ $('dPassed').textContent=[...E.passed].filter(id=>!E.played.has(id)).length;$('dDrive').textContent='#'+Math.max(1,hist.drives+(E.phase==='idle'?1:0));
+}
+let lastAhead=[];
+function ahead(range){
+ const out=[];if(!E.pos)return out;const onRoute=E.route&&!(E.mode==='gps'&&E.offN>=2);
+ for(const s of pool.values()){
+  if(!srcOn(s)||E.played.has(s.id)||E.missed.has(s.id))continue;
+  if(onRoute){const pr=projOf(s);if(!pr||pr.off>s.r)continue;const half=Math.sqrt(s.r*s.r-pr.off*pr.off);const enter=pr.d-half-E.along,exit=pr.d+half-E.along;
+   if(exit<0||enter>range)continue;if(E.passed.has(s.id)&&enter<0)continue;out.push({s,d:Math.max(0,enter)})}
+  else{const d=hav(E.pos,s.p);if(d-s.r>range||E.passed.has(s.id))continue;if(E.heading!=null&&d>s.r&&Math.abs(rel(brg(E.pos,s.p),E.heading))>70)continue;out.push({s,d:Math.max(0,d-s.r)})}
+ }
+ return out.sort((a,b)=>a.d-b.d||b.s.score-a.s.score);
+}
+function renderStrip(){
+ const svgEl=$('strip'),W=Math.max(320,Math.min(900,Math.round(svgEl.getBoundingClientRect().width)||640)),x0=44,x1=W-18,RANGE=20*MI,X=d=>x0+(x1-x0)*Math.min(1,Math.max(0,d)/RANGE);
+ let h=`<line class="st-road" x1="14" y1="54" x2="${W-8}" y2="54"/><line class="st-dash" x1="40" y1="54" x2="${W-10}" y2="54"/>`;
+ for(let m=5;m<=20;m+=5){const x=X(m*MI);h+=`<line class="st-tick" x1="${x}" y1="45" x2="${x}" y2="63"/><text class="st-mi" x="${x}" y="105" text-anchor="middle">${m} MI</text>`}
+ const list=ahead(RANGE);lastAhead=list;const lanes=[-1e9,-1e9];let labeled=0;
+ list.slice(0,18).forEach(o=>{const s=o.s,x=X(o.d),t=trunc(titleOf(s),24),tw=t.length*6.4+6;let lab='';
+  if(labeled<10){for(const L of [0,1]){const end=x+tw>W-4,start=end?x-tw:x;if(start>lanes[L]+10){lanes[L]=end?x+2:x+tw;const up=L===0;labeled++;
+   lab=`<line class="st-lead" x1="${x}" y1="${up?46:62}" x2="${x}" y2="${up?24:84}"/><text class="st-lab" x="${end?x-4:x+4}" y="${up?20:96}" text-anchor="${end?'end':'start'}">${esc(t)}</text>`;break}}}
+  h+=`<g class="c-${s.cat}">${lab}${s.kind==='sight'?`<rect class="st-dot" x="${x-5}" y="49" width="10" height="10" transform="rotate(45 ${x} 54)"/>`:`<circle class="st-dot" cx="${x}" cy="54" r="5"/>`}</g>`});
+ h+=`<g class="st-car" transform="translate(24 54)"><circle r="9"/><path d="M-3 -4.5 4.5 0 -3 4.5z"/></g>`;
+ if(!list.length)h+=`<text class="st-none" x="${(x0+x1)/2}" y="36" text-anchor="middle">${E.pos?(E.phase==='running'?'Nothing in the next 20 miles yet':'Start a drive to see what is ahead'):'Waiting for GPS'}</text>`;
+ svgEl.setAttribute('viewBox',`0 0 ${W} 108`);svgEl.innerHTML=h;$('aheadN').textContent=list.length?`${list.length} stor${list.length===1?'y':'ies'}`:'';
+}
+function renderNext(){
+ const el=$('next');if(!el)return;
+ if(E.phase==='idle'){el.textContent=`${lastAhead.length} stories in the first 20 miles of the route. Each drive plays a different slice.`;return}
+ if(E.phase==='ended'){el.textContent='Stories you heard come back after a few drives.';return}
+ let inR=0;if(E.pos)for(const s of pool.values())if(s.kind==='area'&&srcOn(s)&&!E.played.has(s.id)&&hav(E.pos,s.p)<=s.r)inR++;
+ const wait=Math.max(0,FREQ[prefs.freq].gap*60-(E.t-E.lastStoryEnd));const sight=lastAhead.find(o=>o.s.kind==='sight');
+ el.textContent=`${inR} in range · ${wait>0?`next break opens in ${Math.ceil(wait/60)} ${E.mode==='sim'?'sim ':''}min`:'story break open'}${sight?` · next sight in ${(sight.d/MI).toFixed(1)} mi`:''}`;
+}
+function nowState(){if(E.story)return'story:'+E.story.s.id;if(E.phase==='idle')return'idle';if(E.phase==='ended')return'ended';
+ if(useSp()&&Sp.playing())return'sp:'+Sp.state.item.id;if(useSim()&&Sim.cur)return'sim:'+Sim.n;return'quiet'}
+function renderNow(){const k=nowState();if(k!==nowKey){nowKey=k;buildNow()}updateNow()}
+function buildNow(){
+ const el=$('now'),st=E.story;let cls='now',h='';
+ if(st){const s=st.s,n=st.n;cls+=' story c-'+s.cat;
+  const tag=s.kind==='sight'?'In view':s.src==='artist'?'Your library':s.src==='wiki'?'Wikipedia':'Nearby';
+  const songNext=useSp()||(useSim()&&s.song&&s.song.key);
+  const song=s.song?`<span>${songNext?'Up next':'Song pick'}: <b data-live="song">${esc(songLabel(st))}</b></span>`:'';
+  const src=s.src==='wiki'?`<span><a href="${esc(s.url)}" target="_blank" rel="noopener">Read on Wikipedia</a> · CC BY-SA</span>`:s.src==='artist'?'<span>From your Spotify top artists and Wikidata</span>':'<span>Written for the demo route</span>';
+  h=`<div class="band"><span>${CAT[s.cat]} · ${tag}</span><span class="chip" data-live="where"></span></div><div class="body"><h2 class="title">${esc(n.title)}</h2>${n.lead?`<div class="lead">${esc(n.lead)}</div>`:''}<p class="narr">${esc(n.text)}</p><div class="meta">${src}${song}</div><div class="bar"><i data-live="bar"></i></div></div>`;
+ }else if(nowKey.startsWith('sp:')){const it=Sp.state.item;cls+=' song';
+  h=`<div class="band"><span>Now playing · Spotify</span><span class="chip" data-live="left"></span></div><div class="body"><h2 class="title">${esc(it.name)}</h2><div class="artist">${esc((it.artists||[]).map(a=>a.name).join(', '))}${Sp.state.device?' · '+esc(Sp.state.device.name):''}</div><div class="bar"><i data-live="bar"></i></div></div>`;
+ }else if(nowKey.startsWith('sim:')&&Sim.cur){const t=TRACKS[Sim.cur.k];cls+=' song';
+  h=`<div class="band"><span>Now playing · Sample library</span><span class="chip" data-live="left"></span></div><div class="body"><h2 class="title">${esc(t[0])}</h2><div class="artist">${esc(t[1])}</div><div class="bar"><i data-live="bar"></i></div></div>`;
+ }else if(nowKey==='quiet'){cls+=' plain';
+  h=`<div class="band"><span>Listening</span><span class="chip" data-live="left"></span></div><div class="body"><h2 class="title">Riding quiet</h2><p class="narr" data-live="quiet"></p></div>`;
+ }else if(nowKey==='ended'){cls+=' plain';const passed=[...E.passed].filter(id=>!E.played.has(id)).length;let fresh=0;for(const s of pool.values())if(srcOn(s)&&!hist.heard[s.id])fresh++;
+  h=`<div class="band"><span>Drive over</span><span></span></div><div class="body"><h2 class="title">${esc(E.endTitle||'Drive ended')}</h2><p class="narr">${E.played.size} stor${E.played.size===1?'y':'ies'} played and ${passed} passed by. ${fresh} of the stories you've loaded have never played. Drive again and the scheduler draws a different set.</p></div>`;
+ }else{cls+=' plain';
+  h=`<div class="band"><span>Ready</span><span></span></div><div class="body"><h2 class="title">Ready when you are</h2><p class="narr">Drive with GPS and the app finds stories wherever you are: hand-written ones around Port Chester and on the demo route, Wikipedia everywhere else. Add a destination to see what's coming. Simulate runs a drive at your desk.</p></div>`}
+ h+='<div class="next" id="next"></div>';el.className=cls;el.innerHTML=h;renderNext();
+}
+function quietText(){if(useSp()&&!Sp.playing())return'Spotify is paused or idle, so stories play on a timer. Start your music and they will wait for the gaps between songs.';
+ return'No music in this mode. Stories play on a timer, spaced by the Light, Medium and Heavy setting. Connect Spotify to have them fit between songs.'}
+function updateNow(){
+ const el=$('now'),q=sel=>el.querySelector(`[data-live="${sel}"]`);const bar=q('bar'),left=q('left'),wh=q('where'),quiet=q('quiet'),song=q('song');const st=E.story;
+ if(st){const e=st.speaking?(performance.now()-st.real)/1000:E.t-st.startT;if(bar)bar.style.width=Math.min(100,e/st.est*100)+'%';
+  if(wh)wh.textContent=E.phase==='paused'?'Paused':st.speaking?'Reading aloud':st.s.kind==='sight'?'Right now':(shortWhere(st.s.p)||'Nearby');if(song)song.textContent=songLabel(st)}
+ else if(nowKey.startsWith('sp:')&&Sp.state&&Sp.state.item){const rem=Sp.remaining(),dur=Sp.state.item.duration_ms/1000;if(bar&&rem!=null)bar.style.width=Math.min(100,(dur-rem)/dur*100)+'%';if(left)left.textContent=rem!=null?mmss(rem)+' left':''}
+ else if(nowKey.startsWith('sim:')&&Sim.cur){if(bar)bar.style.width=Math.min(100,Sim.cur.el/Sim.cur.dur*100)+'%';if(left)left.textContent=E.phase==='paused'?'Paused':mmss(Sim.cur.dur-Sim.cur.el)+' left'}
+ else if(nowKey==='quiet'){const wait=Math.max(0,FREQ[prefs.freq].gap*60-(E.t-E.lastStoryEnd));if(left)left.textContent=E.phase==='paused'?'Paused':wait>0?`break in ${Math.ceil(wait/60)} min`:'break open';if(quiet)quiet.textContent=quietText()}
+}
+function stamp(){return E.route&&(E.mode==='sim'||E.dest)?'MI '+(E.along/MI).toFixed(1):clock(E.t)}
+function log(cls,tag,html){E.log.push({m:E.phase==='idle'&&!E.running?'':stamp(),cls,tag,html});if(E.log.length>250)E.log.shift();renderLog()}
+function renderLog(){const ol=$('log');
+ if(!E.log.length){ol.innerHTML='<li class="empty">Nothing yet. Start a drive.</li>';$('logN').textContent='';return}
+ ol.innerHTML=E.log.slice().reverse().map(e=>`<li class="${e.cls}"><span class="m">${e.m}</span><span><span class="tag">${esc(e.tag)}</span>${e.html}</span></li>`).join('');
+ const n=E.log.filter(e=>e.cls==='story'&&e.tag!=='arrived'&&e.tag!=='end').length;$('logN').textContent=n?`${n} stor${n===1?'y':'ies'}`:''}
+function renderHist(){const n=Object.keys(hist.heard).length;$('histMsg').textContent=n?`${n} stories heard across ${hist.drives} drive${hist.drives===1?'':'s'}. Heard stories fade back in over later drives.`:'No stories heard yet.'}
+let lastUI=0,lastStrip=0;
+function renderFrame(){const now=performance.now();moveCar(now);if(now-lastUI>250){lastUI=now;renderNow();renderDash()}if(now-lastStrip>1000){lastStrip=now;renderStrip();renderNext();renderStatus()}}
+function renderAll(){renderStatus();renderControls();renderStrip();renderNow();renderDash();renderLog();renderHist();moveCar(performance.now(),true)}
+const planMsg=t=>{$('planMsg').textContent=t};
+const spMsg=t=>{$('spMsg').textContent=t};
+function renderSp(){const c=Sp.connected();$('spConnect').textContent=c?'Reconnect':'Connect Spotify';$('spOut').hidden=!c;
+ if(framed){$('spConnect').disabled=true;spMsg('Spotify sign-in works from the GitHub copy, not inside this preview.')}
+ else if(c&&!$('spMsg').textContent)spMsg('Connected. Start your music in the Spotify app before you drive.');
+ for(const s of pool.values())if(s.src==='artist')styleStoryPin(s);renderStatus()}
+
+/* ================= wiring ================= */
+function seg(id,val,fn){const g=$(id);const set=v=>g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v?'true':'false'));set(val);
+ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;set(b.dataset.v);fn(b.dataset.v)})}
+function wire(){
+ $('goGps').onclick=()=>startDrive('gps');$('goSim').onclick=()=>startDrive('sim');
+ $('pause').onclick=togglePause;$('skip').onclick=skip;$('end').onclick=()=>arrive(true);
+ seg('freq',prefs.freq,v=>{prefs.freq=v;savePrefs();renderNow()});
+ seg('spd',prefs.spd,v=>{const was=useSp();prefs.spd=v;savePrefs();
+  if(E.mode==='sim'&&(E.phase==='running'||E.phase==='paused')&&was!==useSp()){if(useSp()){Sim.cur=null;Sim.held=null;Sp.poll()}else if(!E.story){Sim.reset();Sim.next()}nowKey='';renderNow()}});
+ seg('nar',prefs.spoken?'spoken':'text',v=>{prefs.spoken=v==='spoken';savePrefs();if(!prefs.spoken&&E.story&&E.story.speaking){Voice.stop();E.story.speaking=false;E.story.startT=E.t;E.story.real=performance.now()}});
+ $('from').value=prefs.from||'';$('to').value=prefs.to||'';
+ $('plan').onclick=()=>planRoute();$('to').addEventListener('keydown',e=>{if(e.key==='Enter')planRoute()});
+ $('demo').onclick=()=>{$('to').value='';$('from').value='';prefs.to='';prefs.from='';savePrefs();E.dest=null;setRoute(demoRoute(),true);planMsg('Demo route loaded: Port Chester to Phoenixville on I-287 and US-202.')};
+ $('voiceSel').onchange=e=>{Voice.v=Voice.list.find(v=>v.name===e.target.value)||Voice.v;prefs.voice=Voice.v?Voice.v.name:'';savePrefs()};
+ $('rate').value=String(prefs.rate);$('rate').onchange=e=>{prefs.rate=+e.target.value;savePrefs()};
+ $('testVoice').onclick=()=>{if(E.story&&E.story.speaking)return;Voice.speak('The Tappan Zee is about three miles across, the widest point of the Hudson.',null,()=>spMsg(''))};
+ [['srcCurated','curated'],['srcWiki','wiki'],['srcArtists','artists']].forEach(([id,k])=>{const c=$(id);c.checked=!!prefs.src[k];
+  c.onchange=()=>{prefs.src[k]=c.checked;savePrefs();for(const s of pool.values())styleStoryPin(s);
+   if(k==='wiki'&&c.checked&&E.running){if(NET.wiki==='down'){NET.wiki='idle';NET.wikiFails=0}lastLook=0;lookAround();if(E.route)prefetchRoute(E.route)}
+   if(k==='artists'&&c.checked)loadArtists();renderStatus();renderStrip()}});
+ $('redir').textContent=redirectUri();$('spClient').value=prefs.clientId||'';
+ $('copyRedir').onclick=()=>{const t=redirectUri(),ok=()=>{$('copyRedir').textContent='Copied'},fb=()=>{const r=document.createRange();r.selectNodeContents($('redir'));const s=getSelection();s.removeAllRanges();s.addRange(r)};
+  try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}};
+ $('spConnect').onclick=()=>spConnect();
+ $('spOut').onclick=()=>{Sp.tok=null;LS.set('rr2-sptok',null);Sp.state=null;Sp.artistsLoaded=false;spMsg('Disconnected.');renderSp()};
+ $('resetHist').onclick=()=>{hist={drives:0,heard:{}};saveHist();for(const s of pool.values())styleStoryPin(s);renderHist();renderDash();$('histMsg').textContent='History cleared. Every story is new again.'};
+ $('recenter').onclick=()=>{follow=true;$('recenter').hidden=true;if(E.pos&&map)map.setView(E.pos,Math.max(map.getZoom(),12))};
+ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-play]');if(!b)return;const s=pool.get(b.getAttribute('data-play'));if(!s||E.phase!=='running')return;if(map)map.closePopup();interruptFor(s,'played from the map')});
+}
+async function boot(){
+ window.addEventListener('resize',()=>renderStrip());
+ wire();initMap();
+ for(const c of CURATED)addStory(Object.assign({src:'curated',kind:c.pts?'sight':'area',p:c.pts?c.pts[0]:c.at},c));
+ setRoute(demoRoute(),true);if(prefs.to)planMsg(`Last destination: ${prefs.to}. Tap Plan route to load it.`);
+ Voice.init();renderAll();
+ await spHandleRedirect();renderSp();if(Sp.connected()&&prefs.src.artists)loadArtists();
+}
+boot();
+})();
+</script>
+</body>
+</html>
